@@ -1,0 +1,27 @@
+#######################################
+# Syntax Coloring Map For Arduration
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+FlashUtils		KEYWORD1
+EndianUtils		KEYWORD1
+MegaCAN_Base	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+# FlashUtils functions
+lerpS16			KEYWORD2
+flashRead_BE	KEYWORD2
+flashWrite_BE	KEYWORD2
+
+# EndianUtils functions
+setBE			KEYWORD2
+getBE			KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
