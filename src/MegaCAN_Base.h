@@ -35,7 +35,7 @@ struct CAN_Msg
 	uint32_t id;
 	// true if id is 29bits
 	uint8_t  ext;
-	// the length of data in teh rxBuff
+	// the length of data in the rxBuff
 	uint8_t  len;
 	// the payload attachment
 	uint8_t  rxBuf[8];
@@ -184,7 +184,7 @@ private:
 struct MegaCAN_Options
 {
 	/**
-	 * if set true, then the interrupt handler will cann the handleStandard()
+	 * if set true, then the interrupt handler will call the handleStandard()
 	 * method immediately, rather than buffering the messages and waiting
 	 * for a handle() call. If this is set true, the handleStandard() method
 	 * should be very quick or else CAN samples will be dropped.
