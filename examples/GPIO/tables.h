@@ -2,7 +2,7 @@
 #define TABLES_H_
 
 #include <EEPROM.h>
-#include "MegaCAN_ExtendedBaseDevice.h"
+#include "MegaCAN_ExtDevice.h"
 #include "MegaCAN_RT_BroadcastHelper.h"
 #include "stdint.h"
 
@@ -100,10 +100,10 @@ static_assert(sizeof(Page2_T) <= MEGA_CAN_EXT_MAX_FLASH_TABLE_SIZE);
 extern OutPC_T outPC;
 
 #define NUM_TABLES 3
-static const MegaCAN::Ext::TableDescriptor_t TABLES[NUM_TABLES] = {
-  {&outPC,                 sizeof(OutPC_T), MegaCAN::Ext::TableType_E::eRam  , -1                }, // table 0
-  {MegaCAN::Ext::tempPage, sizeof(Page1_T), MegaCAN::Ext::TableType_E::eFlash, PAGE1_FLASH_OFFSET}, // table 1
-  {MegaCAN::Ext::tempPage, sizeof(Page2_T), MegaCAN::Ext::TableType_E::eFlash, PAGE2_FLASH_OFFSET}  // table 2
+static const MegaCAN::TableDescriptor_t TABLES[NUM_TABLES] = {
+  {&outPC,                 sizeof(OutPC_T), MegaCAN::TableType_E::eRam  , -1                }, // table 0
+  {MegaCAN::tempPage, sizeof(Page1_T), MegaCAN::TableType_E::eFlash, PAGE1_FLASH_OFFSET}, // table 1
+  {MegaCAN::tempPage, sizeof(Page2_T), MegaCAN::TableType_E::eFlash, PAGE2_FLASH_OFFSET}  // table 2
 };
 
 #endif

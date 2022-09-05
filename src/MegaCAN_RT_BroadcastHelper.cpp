@@ -99,7 +99,7 @@ RT_BroadcastHelper::doBroadcast()
 	}
 }
 
-}
+}// namespace - MegaCAN
 
 void
 __RT_BCastTaskCallback()

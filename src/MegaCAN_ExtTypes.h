@@ -5,8 +5,6 @@
 
 namespace MegaCAN
 {
-namespace Ext
-{
 
 enum TableType_E
 {
@@ -21,7 +19,6 @@ struct TableDescriptor_t
   uint16_t flashOffset;
 };
 
-}
 }
 
 #endif

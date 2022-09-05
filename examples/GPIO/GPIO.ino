@@ -2,7 +2,7 @@
 #include "EndianUtils.h"
 #include "FlashUtils.h"
 #include <logging.h>
-#include "MegaCAN_ExtendedBaseDevice.h"
+#include "MegaCAN_ExtDevice.h"
 #include "MegaCAN_RT_BroadcastHelper.h"
 #include "tables.h"
 
@@ -32,8 +32,8 @@ SET_MEGA_CAN_REV("OpenGPIO-0.1.0     ");
 
 #define RT_BCAST_OFFSET PAGE2_FIELD_OFFSET(rtBcast)
 
-CAN_Msg can_buff[CAN_MSG_BUFFER_SIZE];
-MegaCAN::Ext::BaseDevice gpio(CAN_CS,CAN_ID,CAN_INT,can_buff,CAN_MSG_BUFFER_SIZE,TABLES,NUM_TABLES);
+MegaCAN::CAN_Msg can_buff[CAN_MSG_BUFFER_SIZE];
+MegaCAN::ExtDevice gpio(CAN_CS,CAN_ID,CAN_INT,can_buff,CAN_MSG_BUFFER_SIZE,TABLES,NUM_TABLES);
 
 // Scheduler
 Scheduler ts;
@@ -68,13 +68,13 @@ send_rt_bcast_group(
 void
 setup()
 {
-	Serial.begin(115200);
-	setupLogging();
+  Serial.begin(115200);
+  setupLogging();
 
-	cli();
+  cli();
 
-	// MCP2515 configuration
-	gpio.init();
+  // MCP2515 configuration
+  gpio.init();
   pinMode(CAN_INT, INPUT_PULLUP);// Configuring pin for CAN interrupt input
   attachInterrupt(digitalPinToInterrupt(CAN_INT), can_isr, LOW);
 
@@ -95,8 +95,8 @@ setup()
   ADCSRA = bit(ADEN) | bit(ADIF) | bit(ADIE);
   ADCSRA |= 0x7;// ADC prescaler 128 (Arduino default)
 
-	// enabled interrupts
-	sei();
+  // enabled interrupts
+  sei();
   
   INFO("setup complete!");
 
@@ -108,7 +108,7 @@ void
 loop()
 {
   uint32_t loopStartTimeUs = micros();
-	gpio.handle();
+  gpio.handle();
   ts.execute();
 
   // perform ADC mapping operations on readings that are 'ready'
@@ -199,7 +199,7 @@ applyNewADC(
 // external interrupt service routine for CAN message on MCP2515
 void can_isr()
 {
-	gpio.interrupt();
+  gpio.interrupt();
 }
 
 // ADC complete ISR

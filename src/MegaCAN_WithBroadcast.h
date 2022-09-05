@@ -2,20 +2,23 @@
 #define MEGA_CAN_WITH_BROADCAST_H_
 
 #include <Arduino.h>
-#include "MegaCAN_Base.h"
+#include "MegaCAN_Device.h"
 
-class MegaCAN_WithBroadcast : public MegaCAN_Base
+namespace MegaCAN
+{
+
+class DeviceWithBroadcast : public MegaCAN::Device
 {
 public:
-	MegaCAN_WithBroadcast(
+	DeviceWithBroadcast(
 			uint8_t cs,
 			uint8_t myId,
 			uint8_t intPin);
 
-	MegaCAN_WithBroadcast() = delete;
+	DeviceWithBroadcast() = delete;
 
 	virtual
-	~MegaCAN_WithBroadcast();
+	~DeviceWithBroadcast();
 
 protected:
 	/**
@@ -49,5 +52,7 @@ private:
 	EngineParams_T eng_;
 
 };
+
+}// namespace - MegaCAN
 
 #endif

@@ -1,19 +1,22 @@
 #include "MegaCAN_WithBroadcast.h"
 
-MegaCAN_WithBroadcast::MegaCAN_WithBroadcast(
+namespace MegaCAN
+{
+
+DeviceWithBroadcast::DeviceWithBroadcast(
 		uint8_t cs,
 		uint8_t myId,
 		uint8_t intPin)
-	: MegaCAN_Base(cs,myId,intPin)
+	: Device(cs,myId,intPin)
 {
 }
 
-MegaCAN_WithBroadcast::~MegaCAN_WithBroadcast()
+DeviceWithBroadcast::~DeviceWithBroadcast()
 {
 }
 
 void
-MegaCAN_WithBroadcast::handleStandard(
+DeviceWithBroadcast::handleStandard(
 		const uint32_t &id,
 		const uint8_t &length,
 		uint8_t* data)
@@ -76,3 +79,5 @@ MegaCAN_WithBroadcast::handleStandard(
 		}
 	}// switch
 }
+
+}// namespace - MegaCAN

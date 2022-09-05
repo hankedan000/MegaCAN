@@ -1,17 +1,20 @@
-#include "MegaCAN_Base.h"
+#include "MegaCAN_Device.h"
 
 #define INC_ERROR_COUNTER(VAR) if(VAR!=0xFF){VAR++;}
 
+namespace MegaCAN
+{
+
 void mega_can_rx0_ovr(MCP_CAN *can, void *varg)
 {
-	MegaCAN_Base *mcb = (MegaCAN_Base*)varg;
-	INC_ERROR_COUNTER(mcb->canHW_Rx0_OverflowCount_);
+	MegaCAN::Device *mcd = (MegaCAN::Device*)varg;
+	INC_ERROR_COUNTER(mcd->canHW_Rx0_OverflowCount_);
 }
 
 void mega_can_rx1_ovr(MCP_CAN *can, void *varg)
 {
-	MegaCAN_Base *mcb = (MegaCAN_Base*)varg;
-	INC_ERROR_COUNTER(mcb->canHW_Rx1_OverflowCount_);
+	MegaCAN::Device *mcd = (MegaCAN::Device*)varg;
+	INC_ERROR_COUNTER(mcd->canHW_Rx1_OverflowCount_);
 }
 
 void mega_can_tx_bo(MCP_CAN *can, void *varg)
@@ -50,7 +53,7 @@ static struct MCP_ErrorHandlers megaCAN_ErrHandlers{
 	.e_warn  = NULL
 };
 
-MegaCAN_Base::MegaCAN_Base(
+Device::Device(
 		uint8_t cs,
 		uint8_t myId,
 		uint8_t intPin,
@@ -66,7 +69,7 @@ MegaCAN_Base::MegaCAN_Base(
 	resetErrorCounters();
 }
 
-MegaCAN_Base::MegaCAN_Base(
+Device::Device(
 		uint8_t cs,
 		uint8_t myId,
 		uint8_t intPin,
@@ -83,12 +86,12 @@ MegaCAN_Base::MegaCAN_Base(
 	resetErrorCounters();
 }
 
-MegaCAN_Base::~MegaCAN_Base()
+Device::~Device()
 {
 }
 
 void
-MegaCAN_Base::init()
+Device::init()
 {
 	bool okay = true;
 
@@ -128,7 +131,7 @@ MegaCAN_Base::init()
 }
 
 void
-MegaCAN_Base::interrupt()
+Device::interrupt()
 {
 	CAN_Msg *msg = queue_.getBackPtr();
 
@@ -158,7 +161,7 @@ MegaCAN_Base::interrupt()
 }
 
 void
-MegaCAN_Base::handle()
+Device::handle()
 {
 	const CAN_Msg *msg = nullptr;
 	while (!queue_.isEmpty())
@@ -188,7 +191,7 @@ MegaCAN_Base::handle()
 }
 
 bool
-MegaCAN_Base::send11bitFrame(
+Device::send11bitFrame(
 	uint16_t id,
 	uint8_t len,
 	uint8_t *buf)
@@ -201,14 +204,14 @@ MegaCAN_Base::send11bitFrame(
 //--------------------------------------------------------------------
 
 void
-MegaCAN_Base::getOptions(
-	struct MegaCAN_Options *opts)
+Device::getOptions(
+	struct Options *opts)
 {
 	// base impl leaves defaults
 }
 
 void
-MegaCAN_Base::applyCanFilters(
+Device::applyCanFilters(
 	MCP_CAN *can)
 {
 	// setup the CAN mask/filters
@@ -229,7 +232,7 @@ MegaCAN_Base::applyCanFilters(
 }
 
 bool
-MegaCAN_Base::readFromTable(
+Device::readFromTable(
 		const uint8_t &table,
 		const uint16_t &offset,
 		const uint8_t &len,
@@ -240,7 +243,7 @@ MegaCAN_Base::readFromTable(
 }
 
 bool
-MegaCAN_Base::writeToTable(
+Device::writeToTable(
 		const uint8_t &table,
 		const uint16_t &offset,
 		const uint8_t &len,
@@ -252,7 +255,7 @@ MegaCAN_Base::writeToTable(
 
 
 bool
-MegaCAN_Base::burnTable(
+Device::burnTable(
 		const uint8_t &table)
 {
 	WARN("subclass should override burnTable()");
@@ -261,7 +264,7 @@ MegaCAN_Base::burnTable(
 
 // provide default implementation, but subclass should override
 uint16_t
-MegaCAN_Base::tableBlockingFactor()
+Device::tableBlockingFactor()
 {
 	static bool warnedOnce = false;
 	if ( ! warnedOnce)
@@ -274,7 +277,7 @@ MegaCAN_Base::tableBlockingFactor()
 
 // provide default implementation, but subclass should override
 uint16_t
-MegaCAN_Base::writeBlockingFactor()
+Device::writeBlockingFactor()
 {
 	static bool warnedOnce = false;
 	if ( ! warnedOnce)
@@ -286,7 +289,7 @@ MegaCAN_Base::writeBlockingFactor()
 }
 
 void
-MegaCAN_Base::handleStandard(
+Device::handleStandard(
 		const uint32_t &id,
 		const uint8_t &length,
 		uint8_t* data)
@@ -296,7 +299,7 @@ MegaCAN_Base::handleStandard(
 }
 
 void
-MegaCAN_Base::simReqDrop(
+Device::simReqDrop(
 	uint8_t numReqsToDrop)
 {
 	numSimReqDropsLeft_ = numReqsToDrop;
@@ -307,7 +310,7 @@ MegaCAN_Base::simReqDrop(
 //--------------------------------------------------------------------
 
 void
-MegaCAN_Base::setupOptions()
+Device::setupOptions()
 {
 	// setup default options
 	opts_.handleStandardMsgsImmediately = false;
@@ -315,7 +318,7 @@ MegaCAN_Base::setupOptions()
 }
 
 void
-MegaCAN_Base::handleExtended(
+Device::handleExtended(
 		const MS_HDR_t *hdr,
 		const uint8_t &length,
 		uint8_t *data)
@@ -376,7 +379,7 @@ MegaCAN_Base::handleExtended(
 }
 
 void
-MegaCAN_Base::handleRequest(
+Device::handleRequest(
 		const MS_HDR_t *hdr,
 		uint8_t *reqData)
 {
@@ -485,7 +488,7 @@ MegaCAN_Base::handleRequest(
 }
 
 void
-MegaCAN_Base::handleExtendedMsg(
+Device::handleExtendedMsg(
 		const MS_HDR_t *hdr,
 		const uint8_t &length,
 		uint8_t *data)
@@ -560,7 +563,7 @@ MegaCAN_Base::handleExtendedMsg(
 }
 
 bool
-MegaCAN_Base::sendMsgBuf(
+Device::sendMsgBuf(
 	uint32_t id,
 	uint8_t ext,
 	uint8_t len,
@@ -580,3 +583,5 @@ MegaCAN_Base::sendMsgBuf(
 
 	return res == CAN_OK;
 }
+
+}// namespace - MegaCAN

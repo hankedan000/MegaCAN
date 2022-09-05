@@ -19,15 +19,18 @@
 #define SET_MEGA_CAN_SIG(USER_SIG) \
 	static_assert(sizeof(USER_SIG) <= MAX_SIGNATURE_BYTES, \
 		"Serial signature must be less than 60chars, including the null terminator"); \
-	const char* MegaCAN_Base::__MegaCAN_SerialSignature = (USER_SIG);
+	const char* MegaCAN::Device::__MegaCAN_SerialSignature = (USER_SIG);
 
 #define SET_MEGA_CAN_REV(USER_REV) \
 	static_assert(sizeof(USER_REV) == 20, \
 		"Serial revision must be 20chars long, including the null terminator. You can pad the revision with spaces."); \
-	const char* MegaCAN_Base::__MegaCAN_SerialRevision = (USER_REV);
+	const char* MegaCAN::Device::__MegaCAN_SerialRevision = (USER_REV);
 
 #define CAN_STATUS_RX_OVERFLOW 0x1
 #define CAN_STATUS_TX_FAILED   0x2
+
+namespace MegaCAN
+{
 
 struct CAN_Msg
 {
@@ -181,7 +184,7 @@ private:
 
 };
 
-struct MegaCAN_Options
+struct Options
 {
 	/**
 	 * if set true, then the interrupt handler will call the handleStandard()
@@ -192,27 +195,27 @@ struct MegaCAN_Options
 	bool handleStandardMsgsImmediately;
 };
 
-class MegaCAN_Base
+class Device
 {
 
 public:
-	MegaCAN_Base(
+	Device(
 			uint8_t cs,
 			uint8_t myId,
 			uint8_t intPin,
 			uint8_t buffSize = 40);
 
-	MegaCAN_Base(
+	Device(
 			uint8_t cs,
 			uint8_t myId,
 			uint8_t intPin,
 			CAN_Msg *buff,
 			uint8_t buffSize);
 
-	MegaCAN_Base() = delete;
+	Device() = delete;
 
 	virtual
-	~MegaCAN_Base();
+	~Device();
 
 	void
 	init();
@@ -299,7 +302,7 @@ protected:
 	 */
 	virtual void
 	getOptions(
-		struct MegaCAN_Options *opts);
+		struct Options *opts);
 
 	/**
 	 * Overridable method that allow subclasses to provided custom CAN
@@ -515,7 +518,7 @@ private:
 	// active low
 	uint8_t intPin_;
 
-	struct MegaCAN_Options opts_;
+	struct Options opts_;
 
 	// CAN RX Variables
 	CAN_MsgQueue queue_;
@@ -544,5 +547,7 @@ private:
 	MS_HDR_t rspHdr_;
 
 };
+
+}// namespace - MegaCAN
 
 #endif

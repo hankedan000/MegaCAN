@@ -72,6 +72,6 @@ private:
 
 extern RT_BroadcastHelper RT_Bcast;
 
-}// namespace MegaCan
+}// namespace - MegaCan
 
 #endif
