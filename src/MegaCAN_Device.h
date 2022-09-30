@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include <mcp_can.h>
+#include <mcp_can/mcp_can.h>
 #include <avr/interrupt.h>
 
 #include <string.h>
