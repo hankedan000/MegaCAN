@@ -101,7 +101,7 @@ extern OutPC_T outPC;
 
 #define NUM_TABLES 3
 static const MegaCAN::TableDescriptor_t TABLES[NUM_TABLES] = {
-  {&outPC,                 sizeof(OutPC_T), MegaCAN::TableType_E::eRam  , -1                }, // table 0
+  {&outPC,            sizeof(OutPC_T), MegaCAN::TableType_E::eRam  , -1                }, // table 0
   {MegaCAN::tempPage, sizeof(Page1_T), MegaCAN::TableType_E::eFlash, PAGE1_FLASH_OFFSET}, // table 1
   {MegaCAN::tempPage, sizeof(Page2_T), MegaCAN::TableType_E::eFlash, PAGE2_FLASH_OFFSET}  // table 2
 };

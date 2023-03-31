@@ -68,8 +68,7 @@ send_rt_bcast_group(
 void
 setup()
 {
-  Serial.begin(115200);
-  setupLogging();
+  setupLogging(115200);
 
   cli();
 
