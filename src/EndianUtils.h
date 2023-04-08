@@ -11,14 +11,13 @@ template <typename T>
 void
 setBE(T &var, const T &val)
 {
-  size_t bytesize = sizeof(T);
-  if (bytesize == 2) {
+  if (sizeof(T) == 2) {
     var = __builtin_bswap16(val);
   }
-  else if (bytesize == 4) {
+  else if (sizeof(T) == 4) {
     var = __builtin_bswap32(val);
   }
-  else if (bytesize == 8) {
+  else if (sizeof(T) == 8) {
     var = __builtin_bswap64(val);
   }
 }
@@ -30,14 +29,13 @@ template <typename T>
 T
 getBE(const T &var)
 {
-  size_t bytesize = sizeof(T);
-  if (bytesize == 2) {
+  if (sizeof(T) == 2) {
     return __builtin_bswap16(var);
   }
-  else if (bytesize == 4) {
+  else if (sizeof(T) == 4) {
     return __builtin_bswap32(var);
   }
-  else if (bytesize == 8) {
+  else if (sizeof(T) == 8) {
     return __builtin_bswap64(var);
   }
 }
