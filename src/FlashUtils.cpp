@@ -82,6 +82,42 @@ namespace FlashUtils
   }
 
   template <>
+  uint32_t
+  flashRead_BE(
+    const size_t &offset)
+  {
+    return EEPROM_GetBigU32(offset);
+  }
+
+  template <>
+  int32_t
+  flashRead_BE(
+    const size_t &offset)
+  {
+    return EEPROM_GetBigS32(offset);
+  }
+
+  template <>
+  float
+  flashRead_BE(
+    const size_t &offset)
+  {
+    uint32_t u32 = EEPROM_GetBigU32(offset);
+    return *(float*)((void*)(&u32));
+  }
+
+  template <>
+  double
+  flashRead_BE(
+    const size_t &offset)
+  {
+    // AVR libc doesn't support 64bit doubles (they're really just 32bits floats)
+    static_assert(sizeof(double) == 4);
+    uint32_t u32 = EEPROM_GetBigU32(offset);
+    return *(double*)((void*)(&u32));
+  }
+
+  template <>
   void
   flashWrite_BE(
     const size_t &offset,
@@ -115,6 +151,44 @@ namespace FlashUtils
     const int16_t &value)
   {
     EEPROM_SetBigS16(offset,value);
+  }
+
+  template <>
+  void
+  flashWrite_BE(
+    const size_t &offset,
+    const uint32_t &value)
+  {
+    EEPROM_SetBigU32(offset,value);
+  }
+
+  template <>
+  void
+  flashWrite_BE(
+    const size_t &offset,
+    const int32_t &value)
+  {
+    EEPROM_SetBigS32(offset,value);
+  }
+
+  template <>
+  void
+  flashWrite_BE(
+    const size_t &offset,
+    const float &value)
+  {
+    EEPROM_SetBigU32(offset,*(uint32_t*)((void*)(&value)));
+  }
+
+  template <>
+  void
+  flashWrite_BE(
+    const size_t &offset,
+    const double &value)
+  {
+    // AVR libc doesn't support 64bit doubles (they're really just 32bits floats)
+    static_assert(sizeof(double) == 4);
+    EEPROM_SetBigU32(offset,*(uint32_t*)((void*)(&value)));
   }
 
 }

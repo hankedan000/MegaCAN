@@ -3,15 +3,21 @@
 
 #include <EEPROM.h>
 
-// reads a big endian 16bit signed word from EEPROM flash
+// reads a big endian 16bit signed/unsigned word from EEPROM flash
 #define EEPROM_GetBigS16(ADDR) (int16_t)(((uint16_t)(EEPROM.read(ADDR)) << 8) | EEPROM.read(ADDR + 1))
-
-// reads a big endian 16bit signed word from EEPROM flash
 #define EEPROM_GetBigU16(ADDR) (uint16_t)(((uint16_t)(EEPROM.read(ADDR)) << 8) | EEPROM.read(ADDR + 1))
 
-// writes a big endian 16bit signed/unsigned word from EEPROM flash
+// writes a big endian 16bit signed/unsigned word to EEPROM flash
 #define EEPROM_SetBigU16(ADDR,VAL) EEPROM.write(ADDR,(VAL)>>8&0xFF);EEPROM.write(ADDR + 1,(VAL)&0xFF)
 #define EEPROM_SetBigS16(ADDR,VAL) EEPROM_SetBigU16(ADDR,VAL)
+
+// reads a big endian 32bit signed/unsigned word from EEPROM flash
+#define EEPROM_GetBigS32(ADDR) (int32_t)(((uint32_t)(EEPROM.read(ADDR)) << 24) | ((uint32_t)(EEPROM.read(ADDR + 1)) << 16) | ((uint32_t)(EEPROM.read(ADDR + 2)) << 8) | EEPROM.read(ADDR + 3))
+#define EEPROM_GetBigU32(ADDR) (uint32_t)(((uint32_t)(EEPROM.read(ADDR)) << 24) | ((uint32_t)(EEPROM.read(ADDR + 1)) << 16) | ((uint32_t)(EEPROM.read(ADDR + 2)) << 8) | EEPROM.read(ADDR + 3))
+
+// writes a big endian 32bit signed/unsigned word to EEPROM flash
+#define EEPROM_SetBigU32(ADDR,VAL) EEPROM.write(ADDR,(VAL)>>24&0xFF);EEPROM.write(ADDR + 1,(VAL>>16)&0xFF);EEPROM.write(ADDR + 2,(VAL>>8)&0xFF);EEPROM.write(ADDR + 3,(VAL)&0xFF)
+#define EEPROM_SetBigS32(ADDR,VAL) EEPROM_SetBigU32(ADDR,VAL)
 
 namespace FlashUtils
 {
