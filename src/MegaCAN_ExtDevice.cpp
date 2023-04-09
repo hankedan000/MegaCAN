@@ -21,6 +21,8 @@ ExtDevice::ExtDevice(
  , currFlashTable_(numTables)
  , needsBurn_(false)
  , flashDataLost_(false)
+ , onTableWrittenCallback_(nullptr)
+ , onTableBurnedCallback_(nullptr)
 {
 	memset(dirtyFlashBits_,0,MEGA_CAN_EXT_NUM_DIRTY_FLASH_WORDS);// reset all dirty bits
 }
@@ -122,6 +124,12 @@ ExtDevice::writeToTable(
 		((uint8_t*)(td.tableData))[flashOffset] = data[i];
 		flashOffset++;
 	}
+
+	// notify optional user callback
+	if (onTableWrittenCallback_)
+	{
+		onTableWrittenCallback_(table,offset,len,data);
+	}
 		
 	return true;
 }
@@ -164,6 +172,12 @@ ExtDevice::burnTable(
 	}
 	needsBurn_ = false;
 	memset(dirtyFlashBits_,0,MEGA_CAN_EXT_NUM_DIRTY_FLASH_WORDS);// reset all dirty bits
+
+	// notify optional user callback
+	if (onTableBurnedCallback_)
+	{
+		onTableBurnedCallback_(table);
+	}
 
 	return true;
 }

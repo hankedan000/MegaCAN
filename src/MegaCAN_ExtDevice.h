@@ -20,6 +20,15 @@ extern uint8_t tempPage[MEGA_CAN_EXT_MAX_FLASH_TABLE_SIZE];
 class ExtDevice : public MegaCAN::Device
 {
 public:
+	using OnTableWrittenCallback = void (*)(
+		uint8_t /*table*/,
+		uint16_t /*offset*/,
+		uint8_t /*len*/,
+		const uint8_t */*data*/);
+	using OnTableBurnedCallback = void (*)(
+		uint8_t /*table*/);
+	
+public:
 	ExtDevice(
 			uint8_t cs,
 			uint8_t myId,
@@ -45,6 +54,20 @@ public:
 	currFlashTable() const
 	{
 		return currFlashTable_;
+	}
+
+	void
+	setOnTableWrittenCallback(
+		OnTableWrittenCallback cb)
+	{
+		onTableWrittenCallback_ = cb;
+	}
+
+	void
+	setOnTableBurnedCallback(
+		OnTableBurnedCallback cb)
+	{
+		onTableBurnedCallback_ = cb;
 	}
 
 protected:
@@ -137,6 +160,10 @@ private:
 	 * for another table prior to receiving a MSG_BURN request
 	 */
 	bool flashDataLost_;
+
+	// optional user callbacks when a table has been written/burned
+	OnTableWrittenCallback onTableWrittenCallback_;
+	OnTableBurnedCallback onTableBurnedCallback_;
 
 };
 
