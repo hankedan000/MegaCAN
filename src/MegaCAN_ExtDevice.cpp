@@ -116,7 +116,7 @@ ExtDevice::writeToTable(
 	}
 
 	// write data to temporary RAM location where flash was loaded
-	needsBurn_ = len > 0;
+	needsBurn_ = (td.tableType == TableType_E::eFlash) && (len > 0);
 	uint16_t flashOffset = offset;
 	for (uint8_t i=0; i<len; i++)
 	{
