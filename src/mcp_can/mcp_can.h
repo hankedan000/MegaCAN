@@ -121,7 +121,7 @@ class MCP_CAN
     INT8U setMsg(INT32U id, INT8U rtr, INT8U ext, INT8U len, INT8U *pData);        // Set message
     INT8U clearMsg();                                                   // Clear all message to zero
     INT8U readMsg(INT32U *id, INT8U *ext, INT8U *len, INT8U buf[]);     // Read message
-    INT8U sendMsg();                                                    // Send message
+    INT8U sendMsg(INT8U waitForSend);                                   // Send message
 
 public:
     MCP_CAN(INT8U _CS);
@@ -132,8 +132,8 @@ public:
     INT8U init_Filt(INT8U num, INT32U ulData);                          // Initialize Filter(s)
     void setSleepWakeup(INT8U enable);                                  // Enable or disable the wake up interrupt (If disabled the MCP2515 will not be woken up by CAN bus activity)
     INT8U setMode(INT8U opMode);                                        // Set operational mode
-    INT8U sendMsgBuf(INT32U id, INT8U ext, INT8U len, INT8U *buf);      // Send message to transmit buffer
-    INT8U sendMsgBuf(INT32U id, INT8U len, INT8U *buf);                 // Send message to transmit buffer
+    INT8U sendMsgBuf(INT32U id, INT8U ext, INT8U len, INT8U *buf, INT8U waitForSend = 1);// Send message to transmit buffer
+    INT8U sendMsgBuf(INT32U id, INT8U len, INT8U *buf, INT8U waitForSend = 1);// Send message to transmit buffer
     INT8U readMsgBuf(INT32U *id, INT8U *ext, INT8U *len, INT8U *buf);   // Read message from receive buffer
     INT8U readMsgBuf(INT32U *id, INT8U *len, INT8U *buf);               // Read message from receive buffer
     INT8U checkReceive(void);                                           // Check for received data

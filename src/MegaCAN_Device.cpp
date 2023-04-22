@@ -578,7 +578,7 @@ Device::sendMsgBuf(
 	 * SPI.transfer() while waiting for the SPIF interrupt flag to get set.
 	 */
 	MC_ATOMIC_START
-	res = can_.sendMsgBuf(id,ext,len,buf);
+	res = can_.sendMsgBuf(id,ext,len,buf,false);// false -> don't wait for send
 	MC_ATOMIC_END
 
 	return res == CAN_OK;
