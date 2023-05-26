@@ -1,9 +1,50 @@
 #include "MegaCAN_Device.h"
 
 #define INC_ERROR_COUNTER(VAR) if(VAR!=0xFF){VAR++;}
+#define IS_VISIBLE_ASCII(c) (c >= 32 && c <= 126)
+
+#define LOG_CAN_TRAFFIC 0// set to 1 to log CAN traffic to UART
 
 namespace MegaCAN
 {
+
+#if LOG_CAN_TRAFFIC
+	// "0x12345678 | len 4 | 00 00 00 00 00 00 00 00 | ........ |"
+	char __canMsgBuff[64];
+
+	const char *
+	fmtCAN_DebugStr(
+		uint32_t id,
+		uint8_t ext,
+		uint8_t len,
+		uint8_t *buf)
+	{
+		sprintf(
+			__canMsgBuff,
+			"0x%08lx | len %d | %02x %02x %02x %02x %02x %02x %02x %02x | %c%c%c%c%c%c%c%c |",
+			id | (!!ext << 31),
+			len,
+			// hex dump portion
+			(len >= 1 ? buf[0] : 0x00),
+			(len >= 2 ? buf[1] : 0x00),
+			(len >= 3 ? buf[2] : 0x00),
+			(len >= 4 ? buf[3] : 0x00),
+			(len >= 5 ? buf[4] : 0x00),
+			(len >= 6 ? buf[5] : 0x00),
+			(len >= 7 ? buf[6] : 0x00),
+			(len == 8 ? buf[7] : 0x00),
+			// ascii dump portion
+			(len >= 1 && IS_VISIBLE_ASCII(buf[0]) ? buf[0] : '.'),
+			(len >= 2 && IS_VISIBLE_ASCII(buf[1]) ? buf[1] : '.'),
+			(len >= 3 && IS_VISIBLE_ASCII(buf[2]) ? buf[2] : '.'),
+			(len >= 4 && IS_VISIBLE_ASCII(buf[3]) ? buf[3] : '.'),
+			(len >= 5 && IS_VISIBLE_ASCII(buf[4]) ? buf[4] : '.'),
+			(len >= 6 && IS_VISIBLE_ASCII(buf[5]) ? buf[5] : '.'),
+			(len >= 7 && IS_VISIBLE_ASCII(buf[6]) ? buf[6] : '.'),
+			(len == 8 && IS_VISIBLE_ASCII(buf[7]) ? buf[7] : '.'));
+		return __canMsgBuff;
+	}
+#endif
 
 void mega_can_rx0_ovr(MCP_CAN *can, void *varg)
 {
@@ -167,6 +208,9 @@ Device::handle()
 	while (!queue_.isEmpty())
 	{
 		msg = queue_.getFrontPtr();
+#if LOG_CAN_TRAFFIC
+		INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->rxBuf));
+#endif
 
 		if (msg->ext)
 		{
@@ -570,6 +614,10 @@ Device::sendMsgBuf(
 	uint8_t *buf)
 {
 	uint8_t res = CAN_OK;
+
+#if LOG_CAN_TRAFFIC
+		INFO("BUS <<< MCU %s", fmtCAN_DebugStr(id,ext,len,buf));
+#endif
 
 	/**
 	 * Disable interrupts because we don't want to initiate any SPI
