@@ -474,15 +474,20 @@ Device::handleRequest(
 					__MegaCAN_SerialRevision);
 		}
 
-		if ((hdr->offset + req->rspLength) > MAX_REVISION_BYTES)
+		// send the firmware revision. pad with trailing zeros.
+		uint16_t offset = hdr->offset;
+		for (uint8_t i=0; i<req->rspLength; i++, offset++)
 		{
-			ERROR("Requested too many bytes from revision!");
-			okay = false;
+			if (offset < __MegaCAN_SerialRevisionLen)
+			{
+				txBuf_[i] = __MegaCAN_SerialRevision[offset];
+			}
+			else
+			{
+				txBuf_[i] = '\0';
+			}
 		}
-		else
-		{
-			resData = __MegaCAN_SerialRevision + hdr->offset;
-		}
+		resData = txBuf_;
 	}
 	else
 	{

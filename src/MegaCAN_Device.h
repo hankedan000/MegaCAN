@@ -19,6 +19,7 @@
 #define DECL_MEGA_CAN_REV(USER_REV) \
 	static_assert(sizeof(USER_REV) <= MAX_SIGNATURE_BYTES, \
 		"Serial revision must be less than 60chars, including the null terminator"); \
+	const uint8_t MegaCAN::Device::__MegaCAN_SerialRevisionLen = sizeof(USER_REV); \
 	const char* MegaCAN::Device::__MegaCAN_SerialRevision = (USER_REV);
 
 #define DECL_MEGA_CAN_SIG(USER_SIG) \
@@ -509,6 +510,7 @@ private:
 
 public:
 	static const char* __MegaCAN_SerialSignature;
+	static const uint8_t __MegaCAN_SerialRevisionLen;
 	static const char* __MegaCAN_SerialRevision;
 
 private:
