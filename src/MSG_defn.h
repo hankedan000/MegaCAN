@@ -21,11 +21,11 @@
 #define MSG_WCR     0x81
 #define MSG_SPND    0x82
 
-#define TABLE_NO_SIG 14
-#define TABLE_NO_REV 15
+#define TABLE_NO_REV 14
+#define TABLE_NO_SIG 15
 
-#define MAX_SIGNATURE_BYTES 60
-#define MAX_REVISION_BYTES 20
+#define MAX_REVISION_BYTES 60
+#define MAX_SIGNATURE_BYTES 20
 
 // defines for accessing MSG_PROT data field
 #define GET_MSG_PROT_MYVARBLK(data8_ptr)    ((data8_ptr)[1])
