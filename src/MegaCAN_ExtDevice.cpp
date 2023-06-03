@@ -1,4 +1,6 @@
 #include "MegaCAN_ExtDevice.h"
+
+#include <avr/wdt.h>
 #include <EEPROM.h>
 
 namespace MegaCAN
@@ -167,6 +169,10 @@ ExtDevice::burnTable(
 	{
 		if (dirtyFlashBits_[i/8] & (1<<(i%8)))
 		{
+			// writing to EEPROM is slow (~3.4ms per byte)
+			// keep watchdog happy if user code uses it
+			wdt_reset();
+
 			EEPROM.write(td.flashOffset + i, ((uint8_t*)(td.tableData))[i]);
 		}
 	}
