@@ -21,8 +21,8 @@
 // #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
 
 // Required for MegaCAN library
-SET_MEGA_CAN_SIG("OpenGPIO");
-SET_MEGA_CAN_REV("OpenGPIO-0.1.0     ");
+DECL_MEGA_CAN_REV("OpenGPIO");
+DECL_MEGA_CAN_SIG("OpenGPIO-0.1.0     ");
 
 // CAN related variables
 #define CAN_CS  10

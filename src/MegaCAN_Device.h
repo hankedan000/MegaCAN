@@ -16,15 +16,15 @@
 #define MC_ATOMIC_START ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 #define MC_ATOMIC_END }
 
-#define SET_MEGA_CAN_SIG(USER_SIG) \
-	static_assert(sizeof(USER_SIG) <= MAX_SIGNATURE_BYTES, \
-		"Serial signature must be less than 60chars, including the null terminator"); \
-	const char* MegaCAN::Device::__MegaCAN_SerialSignature = (USER_SIG);
-
-#define SET_MEGA_CAN_REV(USER_REV) \
-	static_assert(sizeof(USER_REV) == 20, \
-		"Serial revision must be 20chars long, including the null terminator. You can pad the revision with spaces."); \
+#define DECL_MEGA_CAN_REV(USER_REV) \
+	static_assert(sizeof(USER_REV) <= MAX_SIGNATURE_BYTES, \
+		"Serial revision must be less than 60chars, including the null terminator"); \
 	const char* MegaCAN::Device::__MegaCAN_SerialRevision = (USER_REV);
+
+#define DECL_MEGA_CAN_SIG(USER_SIG) \
+	static_assert(sizeof(USER_SIG) == 20, \
+		"Serial signature must be 20chars long, including the null terminator. You can pad the signature with spaces."); \
+	const char* MegaCAN::Device::__MegaCAN_SerialSignature = (USER_SIG);
 
 #define CAN_STATUS_RX_OVERFLOW 0x1
 #define CAN_STATUS_TX_FAILED   0x2
