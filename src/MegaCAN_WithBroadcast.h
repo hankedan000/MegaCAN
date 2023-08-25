@@ -13,7 +13,9 @@ public:
 	DeviceWithBroadcast(
 			uint8_t cs,
 			uint8_t myId,
-			uint8_t intPin);
+			uint8_t intPin,
+			CAN_Msg *buff,
+			uint8_t buffSize);
 
 	DeviceWithBroadcast() = delete;
 

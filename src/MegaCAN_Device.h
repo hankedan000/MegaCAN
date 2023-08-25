@@ -49,31 +49,16 @@ class CAN_MsgQueue
 {
 public:
 	CAN_MsgQueue(
-		uint8_t size)
-	{
-		buff_ = (CAN_Msg*)malloc(sizeof(CAN_Msg) * size);
-		buff_size_ = size;
-		buff_owned_ = true;
-		clear();
-	}
-
-	CAN_MsgQueue(
 		CAN_Msg *buff,
 		uint8_t size)
 	{
 		buff_ = buff;
 		buff_size_ = size;
-		buff_owned_ = false;
 		clear();
 	}
 
 	~CAN_MsgQueue()
 	{
-		if (buff_owned_ && buff_ != NULL)
-		{
-			free(buff_);
-			buff_ = NULL;
-		}
 	}
 
 	void
@@ -176,8 +161,6 @@ private:
 	CAN_Msg *buff_;
 	// the number of allocated elements in buff_
 	uint8_t buff_size_;
-	// set true if this class owns the alloced memory in buff_
-	bool buff_owned_;
 
 	volatile uint8_t front_;
 	volatile uint8_t back_;
@@ -200,12 +183,6 @@ class Device
 {
 
 public:
-	Device(
-			uint8_t cs,
-			uint8_t myId,
-			uint8_t intPin,
-			uint8_t buffSize = 40);
-
 	Device(
 			uint8_t cs,
 			uint8_t myId,

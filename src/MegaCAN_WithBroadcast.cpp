@@ -6,8 +6,10 @@ namespace MegaCAN
 DeviceWithBroadcast::DeviceWithBroadcast(
 		uint8_t cs,
 		uint8_t myId,
-		uint8_t intPin)
-	: Device(cs,myId,intPin)
+		uint8_t intPin,
+		CAN_Msg *buff,
+		uint8_t buffSize)
+	: Device(cs,myId,intPin,buff,buffSize)
 {
 }
 

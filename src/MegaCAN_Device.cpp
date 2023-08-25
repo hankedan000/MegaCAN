@@ -98,22 +98,6 @@ Device::Device(
 		uint8_t cs,
 		uint8_t myId,
 		uint8_t intPin,
-		uint8_t buffSize)
-	: can_(cs)
-	, myID_(myId)
-	, intPin_(intPin)
-	, queue_(buffSize)
-	, canStatus_(0x0)
-	, numSimReqDropsLeft_(0)
-{
-	setupOptions();
-	resetErrorCounters();
-}
-
-Device::Device(
-		uint8_t cs,
-		uint8_t myId,
-		uint8_t intPin,
 		CAN_Msg *buff,
 		uint8_t buffSize)
 	: can_(cs)
