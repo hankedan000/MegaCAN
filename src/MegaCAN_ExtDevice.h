@@ -93,22 +93,22 @@ protected:
 	 */
 	virtual bool
 	readFromTable(
-			const uint8_t &table,
-			const uint16_t &offset,
-			const uint8_t &len,
+			const uint8_t table,
+			const uint16_t offset,
+			const uint8_t len,
 			const uint8_t *&resData) override;
 
 	virtual bool
 	writeToTable(
-		const uint8_t &table,
-		const uint16_t &offset,
-		const uint8_t &len,
+		const uint8_t table,
+		const uint16_t offset,
+		const uint8_t len,
 		const uint8_t *data) override;
 
 	// called by base class when we should burn the current flash table
 	virtual bool
 	burnTable(
-			const uint8_t &table) override;
+			const uint8_t table) override;
 	
 	virtual uint16_t
 	tableBlockingFactor() override
@@ -125,7 +125,7 @@ protected:
 private:
 	bool
 	loadFlashTable(
-		const uint8_t &table);
+		const uint8_t table);
 
 private:
 	/**

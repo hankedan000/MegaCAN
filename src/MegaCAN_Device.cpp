@@ -261,9 +261,9 @@ Device::applyCanFilters(
 
 bool
 Device::readFromTable(
-		const uint8_t &table,
-		const uint16_t &offset,
-		const uint8_t &len,
+		const uint8_t table,
+		const uint16_t offset,
+		const uint8_t len,
 		const uint8_t *&resData)
 {
 	WARN("subclass should override readFromTable()");
@@ -272,9 +272,9 @@ Device::readFromTable(
 
 bool
 Device::writeToTable(
-		const uint8_t &table,
-		const uint16_t &offset,
-		const uint8_t &len,
+		const uint8_t table,
+		const uint16_t offset,
+		const uint8_t len,
 		const uint8_t *data)
 {
 	WARN("subclass should override writeToTable()");
@@ -284,7 +284,7 @@ Device::writeToTable(
 
 bool
 Device::burnTable(
-		const uint8_t &table)
+		const uint8_t table)
 {
 	WARN("subclass should override burnTable()");
 	return false;
@@ -318,8 +318,8 @@ Device::writeBlockingFactor()
 
 void
 Device::handleStandard(
-		const uint32_t &id,
-		const uint8_t &length,
+		const uint32_t id,
+		const uint8_t length,
 		uint8_t* data)
 {
 	// base class doesn't provide broadcast support
@@ -348,7 +348,7 @@ Device::setupOptions()
 void
 Device::handleExtended(
 		const MS_HDR_t *hdr,
-		const uint8_t &length,
+		const uint8_t length,
 		uint8_t *data)
 {
 	uint8_t table = getTable(hdr);
@@ -523,7 +523,7 @@ Device::handleRequest(
 void
 Device::handleExtendedMsg(
 		const MS_HDR_t *hdr,
-		const uint8_t &length,
+		const uint8_t length,
 		uint8_t *data)
 {
 	uint8_t rspLength;

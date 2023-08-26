@@ -37,8 +37,8 @@ protected:
 	 */
 	virtual void
 	handleStandard(
-			const uint32_t &id,
-			const uint8_t &length,
+			const uint32_t id,
+			const uint8_t length,
 			uint8_t *data) override;
 
 private:

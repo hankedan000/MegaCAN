@@ -337,9 +337,9 @@ protected:
 	 */
 	virtual bool
 	readFromTable(
-			const uint8_t &table,
-			const uint16_t &offset,
-			const uint8_t &len,
+			const uint8_t table,
+			const uint16_t offset,
+			const uint8_t len,
 			const uint8_t *&resData);
 
 	/**
@@ -364,9 +364,9 @@ protected:
 	 */
 	virtual bool
 	writeToTable(
-			const uint8_t &table,
-			const uint16_t &offset,
-			const uint8_t &len,
+			const uint8_t table,
+			const uint16_t offset,
+			const uint8_t len,
 			const uint8_t *data);
 
 	/**
@@ -382,7 +382,7 @@ protected:
 	 */
 	virtual bool
 	burnTable(
-			const uint8_t &table);
+			const uint8_t table);
 
 	/**
 	 * Called when a standard 11bit megasquirt broadcast frame is received.
@@ -398,8 +398,8 @@ protected:
 	 */
 	virtual void
 	handleStandard(
-			const uint32_t &id,
-			const uint8_t &length,
+			const uint32_t id,
+			const uint8_t length,
 			uint8_t *data);
 
 	void
@@ -425,7 +425,7 @@ private:
 	void
 	handleExtended(
 			const MS_HDR_t *hdr,
-			const uint8_t &length,
+			const uint8_t length,
 			uint8_t *data);
 
 	/**
@@ -457,7 +457,7 @@ private:
 	void
 	handleExtendedMsg(
 			const MS_HDR_t *hdr,
-			const uint8_t &length,
+			const uint8_t length,
 			uint8_t *data);
 
 	/**

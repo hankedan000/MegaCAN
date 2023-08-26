@@ -31,9 +31,9 @@ ExtDevice::ExtDevice(
 
 bool
 ExtDevice::readFromTable(
-		const uint8_t &table,
-		const uint16_t &offset,
-		const uint8_t &len,
+		const uint8_t table,
+		const uint16_t offset,
+		const uint8_t len,
 		const uint8_t *&resData)
 {
 	DEBUG(
@@ -78,9 +78,9 @@ ExtDevice::readFromTable(
 
 bool
 ExtDevice::writeToTable(
-	const uint8_t &table,
-	const uint16_t &offset,
-	const uint8_t &len,
+	const uint8_t table,
+	const uint16_t offset,
+	const uint8_t len,
 	const uint8_t *data)
 {
 	DEBUG(
@@ -138,7 +138,7 @@ ExtDevice::writeToTable(
 
 bool
 ExtDevice::burnTable(
-		const uint8_t &table)
+		const uint8_t table)
 {
 	if (table != currFlashTable_)
 	{
@@ -190,7 +190,7 @@ ExtDevice::burnTable(
 
 bool
 ExtDevice::loadFlashTable(
-	const uint8_t &table)
+	const uint8_t table)
 {
 	if (needsBurn_)
 	{
