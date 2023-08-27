@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 #include "EndianUtils.h"
 #include "FlashUtils.h"
-#include <logging.h>
+#include <logging_impl_lite.h>
 #include "MegaCAN_ExtDevice.h"
 #include "MegaCAN_RT_BroadcastHelper.h"
 #include "tables.h"
