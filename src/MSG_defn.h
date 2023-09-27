@@ -1,6 +1,8 @@
 #ifndef MSG_DEFN_H_
 #define MSG_DEFN_H_
 
+#include <stdint.h>
+
 #define bswap16(x) __builtin_bswap16(x)
 
 // standard message types
@@ -85,16 +87,17 @@ getOffset(
 
 #define MSG00_ID  MSG_BASE+0
 struct MSG00_t{
-  uint16_t  seconds;
-  uint16_t  pw1;
-  uint16_t  pw2;
-  uint16_t  rpm;
-  static uint16_t get_seconds(const void *c) {return bswap16(((const MSG00_t*)c)->seconds);}
+  uint8_t data[8];
+
+  uint16_t seconds() const {return bswap16(*(const uint16_t *)(data+0));}
+
+  // returns pulse width in milliseconds
+  uint16_t pw1() const {return bswap16(*(const uint16_t *)(data+2));}
+
   // returned pulse width in microseconds
-  static uint16_t get_pw1(const void *c) {return bswap16(((const MSG00_t*)c)->pw1);}
-  // returned pulse width in microseconds
-  static uint16_t get_pw2(const void *c) {return bswap16(((const MSG00_t*)c)->pw2);}
-  static uint16_t get_rpm(const void *c) {return bswap16(((const MSG00_t*)c)->rpm);}
+  uint16_t pw2() const {return bswap16(*(const uint16_t *)(data+4));}
+
+  uint16_t rpm() const {return bswap16(*(const uint16_t *)(data+6));}
 };
 
 #define MSG02_ID  MSG_BASE+2
@@ -103,18 +106,19 @@ struct MSG00_t{
 #define MSQ_MAT_DIV  10
 #define MSQ_CLT_DIV  10
 struct MSG02_t{
-  int16_t   baro;
-  int16_t   map;
-  int16_t   mat;
-  int16_t   clt;
+  uint8_t data[8];
+
   // returned barometric pressure in kPa
-  static uint16_t get_baro(const void *c) {return bswap16(((const MSG02_t*)c)->baro)/MSQ_BARO_DIV;}
+  uint16_t baro() const {return bswap16(*(const uint16_t *)(data+0))/MSQ_BARO_DIV;}
+
   // returned manifold pressure in kPa
-  static uint16_t get_map(const void *c) {return bswap16(((const MSG02_t*)c)->map)/MSQ_MAP_DIV;}
+  uint16_t map() const {return bswap16(*(const uint16_t *)(data+2))/MSQ_MAP_DIV;}
+
   // returned manifold air temp in degrees fahrenheit
-  static uint16_t get_mat(const void *c) {return bswap16(((const MSG02_t*)c)->mat)/MSQ_MAT_DIV;}
+  uint16_t mat() const {return bswap16(*(const uint16_t *)(data+4))/MSQ_MAT_DIV;}
+
   // returned coolant temp in degrees fahrenheit
-  static uint16_t get_clt(const void *c) {return bswap16(((const MSG02_t*)c)->clt)/MSQ_CLT_DIV;}
+  uint16_t clt() const {return bswap16(*(const uint16_t *)(data+6))/MSQ_CLT_DIV;}
 };
 
 #define MSG03_ID  MSG_BASE+3
@@ -123,29 +127,32 @@ struct MSG02_t{
 #define MSQ_AFR1_DIV  10
 #define MSQ_AFR2_DIV  10
 struct MSG03_t{
-  int16_t  tps;
-  int16_t  batt;
-  int16_t  afr1;
-  int16_t  afr2;
+  uint8_t data[8];
+
   // returned throttle position in percent
-  static uint16_t get_tps(const void *c) {return bswap16(((const MSG03_t*)c)->tps)/MSQ_TPS_DIV;}
+  uint16_t tps() const {return bswap16(*(const uint16_t *)(data+0))/MSQ_TPS_DIV;}
+
   // returned battery voltage in volts
-  static uint16_t get_batt(const void *c) {return bswap16(((const MSG03_t*)c)->batt)/MSQ_BATT_DIV;}
+  uint16_t batt() const {return bswap16(*(const uint16_t *)(data+2))/MSQ_BATT_DIV;}
+
   // returned AFR bank 1
-  static uint16_t get_afr1(const void *c) {return bswap16(((const MSG03_t*)c)->afr1)/MSQ_AFR1_DIV;}
+  uint16_t afr1() const {return bswap16(*(const uint16_t *)(data+4))/MSQ_AFR1_DIV;}
+
   // returned AFR bank 2
-  static uint16_t get_afr2(const void *c) {return bswap16(((const MSG03_t*)c)->afr2)/MSQ_AFR2_DIV;}
+  uint16_t afr2() const {return bswap16(*(const uint16_t *)(data+6))/MSQ_AFR2_DIV;}
 };
 
 #define MSG10_ID  MSG_BASE+10
 struct MSG10_t{
-  uint8_t  status1  : 8;
-  uint8_t  status2  : 8;
-  uint8_t  status3  : 8;
-  uint8_t  status4  : 8;
-  uint16_t status5  : 16;
-  uint8_t  status6  : 8;
-  uint8_t  status7  : 8;
+  uint8_t data[8];
+
+  uint8_t status1() const {return data[0];}
+  uint8_t status2() const {return data[1];}
+  uint8_t status3() const {return data[2];}
+  uint8_t status4() const {return data[3];}
+  uint16_t status5() const {return bswap16(*(const uint16_t *)(data+4));}
+  uint8_t status6() const {return data[6];}
+  uint8_t status7() const {return data[7];}
 };
 
 #endif
