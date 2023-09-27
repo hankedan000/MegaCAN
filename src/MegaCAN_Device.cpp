@@ -107,8 +107,8 @@ Device::Device(
 	, canStatus_(0x0)
 	, numSimReqDropsLeft_(0)
 {
-	setupOptions();
 	resetErrorCounters();
+	setupOptions();
 }
 
 Device::~Device()
