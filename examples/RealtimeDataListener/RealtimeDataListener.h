@@ -74,12 +74,12 @@ struct RT_Data
 class RealtimeDataListener : public MegaCAN::Device
 {
 public:
-	RealtimeDataListener(
-			uint8_t cs,
-			uint8_t myId,
-			uint8_t intPin,
-			MegaCAN::CAN_Msg *buff,
-			uint8_t buffSize);
+  RealtimeDataListener(
+      uint8_t cs,
+      uint8_t myId,
+      uint8_t intPin,
+      MegaCAN::CAN_Msg *buff,
+      uint8_t buffSize);
 
   const RT_Data &
   data() const
@@ -89,9 +89,9 @@ public:
 
 protected:
   // override so we can mark option to handle standard msgs immediately
-	virtual void
-	getOptions(
-		struct MegaCAN::Options *opts) override;
+  virtual void
+  getOptions(
+    struct MegaCAN::Options *opts) override;
 
   /**
    * override this base method so that we can set filters for broadcast
@@ -101,23 +101,23 @@ protected:
   applyCanFilters(
     MCP_CAN *can) override;
   
-	/**
-	 * Called when a standard 11bit megasquirt broadcast frame is received.
-	 * 
-	 * @param[in] id
-	 * The 11bit CAN identifier
-	 * 
-	 * @param[in] length
-	 * The number of data bytes in the CAN frame
-	 * 
-	 * @param[in] data
-	 * A pointer to the data segment of the CAN frame
-	 */
-	virtual void
-	handleStandard(
-			const uint32_t id,
-			const uint8_t length,
-			uint8_t *data) override;
+  /**
+   * Called when a standard 11bit megasquirt broadcast frame is received.
+   * 
+   * @param[in] id
+   * The 11bit CAN identifier
+   * 
+   * @param[in] length
+   * The number of data bytes in the CAN frame
+   * 
+   * @param[in] data
+   * A pointer to the data segment of the CAN frame
+   */
+  virtual void
+  handleStandard(
+      const uint32_t id,
+      const uint8_t length,
+      uint8_t *data) override;
 
 private:
   RT_Data data_;

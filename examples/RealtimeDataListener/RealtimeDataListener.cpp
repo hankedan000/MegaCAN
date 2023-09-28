@@ -38,14 +38,14 @@ RealtimeDataListener::applyCanFilters(
 
 void
 RealtimeDataListener::handleStandard(
-		const uint32_t id,
-		const uint8_t length,
-		uint8_t* data)
+    const uint32_t id,
+    const uint8_t length,
+    uint8_t* data)
 {
   const uint32_t msgId = id - 1520;
 
-	switch (msgId)
-	{
+  switch (msgId)
+  {
     case 0:
       cpymsg(data_.m0.data, data, length);
       break;
@@ -235,8 +235,8 @@ RealtimeDataListener::handleStandard(
     case 62:
       cpymsg(data_.m62.data, data, length);
       break;
-		default:
+    default:
       // ignore data
-			break;
-	}
+      break;
+  }
 }
