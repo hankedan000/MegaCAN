@@ -19,25 +19,19 @@ def print_group(group, attrs):
             print("  // units: %s" % (attr['units']))
         mult = attr['mult']
         div = attr['div']
-        is_scaled = mult != 1 or div != 1
-        if is_scaled:
-            if size == 1:
-                print("  MsgAttr<%s,%d,%d> %s() const {return data[%d];}" % (ctype, mult, div, name, offset))
-            elif size == 2:
-                print("  MsgAttr<%s,%d,%d> %s() const {return MSG_GET_U16(data,%d);}" % (ctype, mult, div, name, offset))
-            elif size == 4:
-                print("  MsgAttr<%s,%d,%d> %s() const {return MSG_GET_U32(data,%d);}" % (ctype, mult, div, name, offset))
-            else:
-                raise RuntimeError("unsupported size")
+        val_getter = ""
+        if size == 1:
+            val_getter = "data[%d]" % offset
+        elif size == 2:
+            val_getter = "MSG_GET_U16(data,%d)" % offset
+        elif size == 4:
+            val_getter = "MSG_GET_U32(data,%d)" % offset
         else:
-            if size == 1:
-                print("  %s %s() {return data[%d];}" % (ctype, name, offset))
-            elif size == 2:
-                print("  %s %s() {return MSG_GET_U16(data,%d);}" % (ctype, name, offset))
-            elif size == 4:
-                print("  %s %s() {return MSG_GET_U32(data,%d);}" % (ctype, name, offset))
-            else:
-                raise RuntimeError("unsupported size")
+            raise RuntimeError("unsupported size")
+        print("  uint16_t %s_raw() const   {return %s;}" % (name, val_getter))
+        print("  uint16_t %s_whole() const {return %s * %d / %d;}" % (name, val_getter, mult, div))
+        print("  uint16_t %s_frac() const  {return %s * %d / %d;}" % (name, val_getter, mult, div))
+        print("  float    %s_flt() const   {return (float)(%s) * %d / %d;}" % (name, val_getter, mult, div))
     print("};")
     print("")
 
