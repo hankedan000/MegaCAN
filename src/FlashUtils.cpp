@@ -6,18 +6,20 @@ namespace FlashUtils
   
   int16_t
   lerpS16(
-    const size_t &xBinsFlashOffset,
-    const size_t &yBinsFlashOffset,
-    const size_t &nBins,
-    const int16_t &value)
+    const size_t xBinsFlashOffset,
+    const size_t yBinsFlashOffset,
+    const size_t nBins,
+    const int16_t value)
   {
+    using value_t = decltype(value);
+    constexpr size_t VALUE_SIZE = sizeof(value_t);
+
     if (nBins <= 1)
     {
       return value;
     }
 
-    int16_t loX_Val, hiX_Val;
-    loX_Val = EEPROM_GetBigS16(xBinsFlashOffset);
+    auto loX_Val = EEPROM_GetBigS16(xBinsFlashOffset);
 
     // handle case where value is below the x-axis (-) limit
     if (value <= loX_Val)
@@ -25,28 +27,75 @@ namespace FlashUtils
       return EEPROM_GetBigS16(yBinsFlashOffset);
     }
 
-    size_t offset = sizeof(int16_t);
+    size_t offset = VALUE_SIZE;
     for (size_t i=0; i<(nBins-1); i++)
     {
-      hiX_Val = EEPROM_GetBigS16(xBinsFlashOffset+offset);
+      const auto hiX_Val = EEPROM_GetBigS16(xBinsFlashOffset+offset);
 
       if (loX_Val <= value && value <= hiX_Val)
       {// found bins to interpolate between
-        int16_t loY_Val = EEPROM_GetBigS16(yBinsFlashOffset+offset-sizeof(int16_t));
-        int16_t hiY_Val = EEPROM_GetBigS16(yBinsFlashOffset+offset);
-        return map(value,loX_Val,hiX_Val,loY_Val,hiY_Val);
+        auto loY_Val = EEPROM_GetBigS16(yBinsFlashOffset+offset-VALUE_SIZE);
+        auto hiY_Val = EEPROM_GetBigS16(yBinsFlashOffset+offset);
+        return static_cast<value_t>(map(value,loX_Val,hiX_Val,loY_Val,hiY_Val));
       }
 
       // increment to look at next two x-axis bins
       loX_Val = hiX_Val;
-      offset += sizeof(int16_t);
+      offset += VALUE_SIZE;
     }
 
     /**
      * never found any values to interpolate between, so value must be higher than
      * the x-axis (+) limit value. return y-axis (+) limit value as result.
      */
-    return EEPROM_GetBigS16(yBinsFlashOffset+(nBins-1)*sizeof(int16_t));
+    return EEPROM_GetBigS16(yBinsFlashOffset+(nBins-1)*VALUE_SIZE);
+  }
+  
+  uint16_t
+  lerpU16(
+    const size_t xBinsFlashOffset,
+    const size_t yBinsFlashOffset,
+    const size_t nBins,
+    const uint16_t value)
+  {
+    using value_t = decltype(value);
+    constexpr size_t VALUE_SIZE = sizeof(value_t);
+
+    if (nBins <= 1)
+    {
+      return value;
+    }
+
+    auto loX_Val = EEPROM_GetBigU16(xBinsFlashOffset);
+
+    // handle case where value is below the x-axis (-) limit
+    if (value <= loX_Val)
+    {
+      return EEPROM_GetBigU16(yBinsFlashOffset);
+    }
+
+    size_t offset = VALUE_SIZE;
+    for (size_t i=0; i<(nBins-1); i++)
+    {
+      const auto hiX_Val = EEPROM_GetBigU16(xBinsFlashOffset+offset);
+
+      if (loX_Val <= value && value <= hiX_Val)
+      {// found bins to interpolate between
+        auto loY_Val = EEPROM_GetBigU16(yBinsFlashOffset+offset-VALUE_SIZE);
+        auto hiY_Val = EEPROM_GetBigU16(yBinsFlashOffset+offset);
+        return static_cast<value_t>(map(value,loX_Val,hiX_Val,loY_Val,hiY_Val));
+      }
+
+      // increment to look at next two x-axis bins
+      loX_Val = hiX_Val;
+      offset += VALUE_SIZE;
+    }
+
+    /**
+     * never found any values to interpolate between, so value must be higher than
+     * the x-axis (+) limit value. return y-axis (+) limit value as result.
+     */
+    return EEPROM_GetBigU16(yBinsFlashOffset+(nBins-1)*VALUE_SIZE);
   }
   
   template <>

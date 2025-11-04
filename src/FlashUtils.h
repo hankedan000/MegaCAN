@@ -24,10 +24,17 @@ namespace FlashUtils
 
 int16_t
 lerpS16(
-  const size_t &xBinsFlashOffset,
-  const size_t &yBinsFlashOffset,
-  const size_t &nBins,
-  const int16_t &value);
+  const size_t xBinsFlashOffset,
+  const size_t yBinsFlashOffset,
+  const size_t nBins,
+  const int16_t value);
+
+uint16_t
+lerpU16(
+  const size_t xBinsFlashOffset,
+  const size_t yBinsFlashOffset,
+  const size_t nBins,
+  const uint16_t value);
 
 /**
  * Reads a big endian variable from EEPROM
