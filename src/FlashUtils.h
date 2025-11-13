@@ -1,6 +1,6 @@
-#ifndef FLASH_UTILS_H_
-#define FLASH_UTILS_H_
+#pragma once
 
+#include <stdint.h>
 #include <EEPROM.h>
 
 // reads a big endian 16bit signed/unsigned word from EEPROM flash
@@ -19,46 +19,49 @@
 #define EEPROM_SetBigU32(ADDR,VAL) EEPROM.write(ADDR,(VAL)>>24&0xFF);EEPROM.write(ADDR + 1,(VAL>>16)&0xFF);EEPROM.write(ADDR + 2,(VAL>>8)&0xFF);EEPROM.write(ADDR + 3,(VAL)&0xFF)
 #define EEPROM_SetBigS32(ADDR,VAL) EEPROM_SetBigU32(ADDR,VAL)
 
+// type used to define an address offset into EEPROM flash
+using fsize_t = uint16_t;
+
 namespace FlashUtils
 {
 
 int16_t
 lerpS16(
-  const size_t xBinsFlashOffset,
-  const size_t yBinsFlashOffset,
-  const size_t nBins,
+  const fsize_t xBinsFlashOffset,
+  const fsize_t yBinsFlashOffset,
+  const fsize_t nBins,
   const int16_t value);
 
 uint16_t
 lerpU16(
-  const size_t xBinsFlashOffset,
-  const size_t yBinsFlashOffset,
-  const size_t nBins,
+  const fsize_t  xBinsFlashOffset,
+  const fsize_t  yBinsFlashOffset,
+  const fsize_t  nBins,
   const uint16_t value);
 
 /**
- * Reads a big endian variable from EEPROM
+ * Reads a trivial type from flash that was stored in big endian format.
+ * The read value is convert into native litte endian format.
  * 
  * @param[in] offset
  * The flash byte offset to read from
  */
-template <typename VAR_T>
-VAR_T
-flashRead_BE(
-  const size_t &offset);
+template <typename T>
+T
+readBE(
+  const fsize_t offset);
 
 /**
- * Reads a big endian variable from EEPROM
+ * Writes a trivial type into flash, converting it from little endian
+ * into big endian prior to storage.
  * 
  * @param[in] offset
- * The flash byte offset to read from
+ * The flash byte offset to write to
  */
-template <typename VAR_T>
+template <typename T>
 void
-flashWrite_BE(
-  const size_t &offset,
-  const VAR_T &value);
+writeBE(
+  const fsize_t offset,
+  const T       value);
 
 }
-
-#endif
