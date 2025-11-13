@@ -1,5 +1,4 @@
-#ifndef ENDIAN_UTILS_H_
-#define ENDIAN_UTILS_H_
+#pragma once
 
 namespace EndianUtils
 {
@@ -9,15 +8,15 @@ namespace EndianUtils
  */
 template <typename T>
 void
-setBE(T &var, const T &val)
+setBE(
+  T     & var,
+  const T val)
 {
   if (sizeof(T) == 2) {
     var = __builtin_bswap16(val);
-  }
-  else if (sizeof(T) == 4) {
+  } else if (sizeof(T) == 4) {
     var = __builtin_bswap32(val);
-  }
-  else if (sizeof(T) == 8) {
+  } else if (sizeof(T) == 8) {
     var = __builtin_bswap64(val);
   }
 }
@@ -27,19 +26,16 @@ setBE(T &var, const T &val)
  */
 template <typename T>
 T
-getBE(const T &var)
+getBE(
+  const T var)
 {
   if (sizeof(T) == 2) {
     return __builtin_bswap16(var);
-  }
-  else if (sizeof(T) == 4) {
+  } else if (sizeof(T) == 4) {
     return __builtin_bswap32(var);
-  }
-  else if (sizeof(T) == 8) {
+  } else if (sizeof(T) == 8) {
     return __builtin_bswap64(var);
   }
 }
 
 }
-
-#endif

@@ -14,8 +14,9 @@ MegaCAN_Base	KEYWORD1
 #######################################
 # FlashUtils functions
 lerpS16			KEYWORD2
-flashRead_BE	KEYWORD2
-flashWrite_BE	KEYWORD2
+lerpU16			KEYWORD2
+readBE	KEYWORD2
+writeBE	KEYWORD2
 
 # EndianUtils functions
 setBE			KEYWORD2
