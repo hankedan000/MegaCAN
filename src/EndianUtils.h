@@ -18,6 +18,8 @@ setBE(
     var = __builtin_bswap32(val);
   } else if (sizeof(T) == 8) {
     var = __builtin_bswap64(val);
+  } else {
+    var = val;
   }
 }
 
@@ -35,6 +37,8 @@ getBE(
     return __builtin_bswap32(var);
   } else if (sizeof(T) == 8) {
     return __builtin_bswap64(var);
+  } else {
+    return var;
   }
 }
 
