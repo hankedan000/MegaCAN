@@ -561,7 +561,7 @@ Device::handleExtendedMsg(
 			{
 				// nothing else to set besides serial version
 			}
-			else if(rspLength = 5)
+			else if(rspLength == 5)
 			{
 				txBuf_[1] = tableBlockingFactor() >> 8;  // high byte
 				txBuf_[2] = tableBlockingFactor() & 0xff;// low byte
