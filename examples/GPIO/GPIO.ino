@@ -38,6 +38,25 @@ MegaCAN::ExtDevice gpio(CAN_CS,CAN_ID,CAN_INT,can_buff,CAN_MSG_BUFFER_SIZE,TABLE
 // Scheduler
 Scheduler ts;
 
+// Define ADC mapping flash lookup table utilities
+using ADC_MappingLUT = FlashUtils::FlashLUT<uint16_t, int16_t>;
+ADC_MappingLUT adcCurveA(
+  PAGE1_FIELD_OFFSET(adcMappingCurveA_xBins),
+  PAGE1_FIELD_OFFSET(adcMappingCurveA_yBins),
+  ADC_MAPPING_CURVE_N_BINS);
+ADC_MappingLUT adcCurveB(
+  PAGE1_FIELD_OFFSET(adcMappingCurveB_xBins),
+  PAGE1_FIELD_OFFSET(adcMappingCurveB_yBins),
+  ADC_MAPPING_CURVE_N_BINS);
+ADC_MappingLUT adcCurveC(
+  PAGE1_FIELD_OFFSET(adcMappingCurveC_xBins),
+  PAGE1_FIELD_OFFSET(adcMappingCurveC_yBins),
+  ADC_MAPPING_CURVE_N_BINS);
+ADC_MappingLUT adcCurveD(
+  PAGE1_FIELD_OFFSET(adcMappingCurveD_xBins),
+  PAGE1_FIELD_OFFSET(adcMappingCurveD_yBins),
+  ADC_MAPPING_CURVE_N_BINS);
+
 #define ADC_READY_MASK 0x1000
 volatile uint16_t adcBuff[6];
 
@@ -153,32 +172,16 @@ applyNewADC(
     switch (mappingCtrl->bits.curve)
     {
       case 0:
-        mapVal = FlashUtils::lerpS16(
-          PAGE1_FIELD_OFFSET(adcMappingCurveA_xBins),
-          PAGE1_FIELD_OFFSET(adcMappingCurveA_yBins),
-          ADC_MAPPING_CURVE_N_BINS,
-          adc);
+        mapVal = adcCurveA.lerp(adc);
         break;
       case 1:
-        mapVal = FlashUtils::lerpS16(
-          PAGE1_FIELD_OFFSET(adcMappingCurveB_xBins),
-          PAGE1_FIELD_OFFSET(adcMappingCurveB_yBins),
-          ADC_MAPPING_CURVE_N_BINS,
-          adc);
+        mapVal = adcCurveB.lerp(adc);
         break;
       case 2:
-        mapVal = FlashUtils::lerpS16(
-          PAGE1_FIELD_OFFSET(adcMappingCurveC_xBins),
-          PAGE1_FIELD_OFFSET(adcMappingCurveC_yBins),
-          ADC_MAPPING_CURVE_N_BINS,
-          adc);
+        mapVal = adcCurveC.lerp(adc);
         break;
       case 3:
-        mapVal = FlashUtils::lerpS16(
-          PAGE1_FIELD_OFFSET(adcMappingCurveD_xBins),
-          PAGE1_FIELD_OFFSET(adcMappingCurveD_yBins),
-          ADC_MAPPING_CURVE_N_BINS,
-          adc);
+        mapVal = adcCurveD.lerp(adc);
         break;
       default:
         mapVal = adc;
