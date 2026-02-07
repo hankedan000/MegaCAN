@@ -1,0 +1,40 @@
+name: Compile Arduino Examples
+on:
+  - push
+  - pull_request
+jobs:
+  compile-examples:
+    runs-on: ubuntu-latest
+    steps:
+      # This step makes the contents of this repository available to the workflow
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+      # This step builds all example sketches
+      # For more information: https://github.com/arduino/compile-sketches#readme
+      - name: Build example sketches
+        uses: arduino/compile-sketches@v1.1.2
+        with:
+          # Version of Arduino CLI to use when building
+          cli-version: latest
+          # Full qualified board name, with Boards Manager URL if needed
+          fqbn: arduino:avr:uno
+          libraries: |
+            - source-path: ./
+            - source-url: https://github.com/hankedan000/ArduinoLogging.git
+            - name: TaskScheduler
+              version: 3.7.0
+          # YAML-format list of paths containing sketches to compile.
+          sketch-paths: ./examples
+          # Set to true to show verbose output in the log
+          verbose: false
+          # Path in which to save a JSON formatted file containing data from the sketch compilations
+          sketches-report-path: ./reports
+          # Set to true to cause the action to determine the change in memory usage and compiler warnings of the compiled sketches between the head and base refs of a PR and the immediate parent commit of a push
+          enable-deltas-report: true
+          # Set to true to cause the action to record the compiler warning count for each sketch compilation in the sketches report
+          enable-warnings-report: true
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/*.json
