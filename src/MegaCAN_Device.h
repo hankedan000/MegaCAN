@@ -525,6 +525,8 @@ private:
 	// Header structure used for building CAN responses
 	MS_HDR_t rspHdr_;
 
+	uint32_t usingMoreRAM_[10];
+
 };
 
 }// namespace - MegaCAN
