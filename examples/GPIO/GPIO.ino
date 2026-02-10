@@ -1,9 +1,11 @@
+#define MC_LOG_ENABLED
+
 #include <EEPROM.h>
-#include "EndianUtils.h"
-#include "FlashUtils.h"
-#include <logging_impl_lite.h>
-#include "MegaCAN_ExtDevice.h"
-#include "MegaCAN_RT_BroadcastHelper.h"
+#include <EndianUtils.h>
+#include <FlashUtils.h>
+#include <MegaCAN/Logging.h>
+#include <MegaCAN_ExtDevice.h>
+#include <MegaCAN_RT_BroadcastHelper.h>
 #include "tables.h"
 
 #include <TaskScheduler.h>
@@ -60,15 +62,15 @@ ADC_MappingLUT adcCurveD(
 #define ADC_READY_MASK 0x1000
 volatile uint16_t adcBuff[6];
 
-void can_isr();
+void canISR();
 
 void
-send_rt_bcast_group(
+sendRtBcastGroup(
   uint16_t baseId,
   uint8_t group)
 {
   uint16_t id = baseId + group;
-  DEBUG("sending rt group %d; id %d",group,id);
+  MC_LOG_DEBUG("sending rt group %d; id %d",group,id);
   
   switch (group)
   {
@@ -79,25 +81,63 @@ send_rt_bcast_group(
       gpio.send11bitFrame(id,4,((uint8_t*)(&outPC) + OUTPC_FIELD_OFFSET(adc4)));
       break;
     default:
-      WARN("bad rt group %d",group);
+      MC_LOG_WARN("bad rt group %d",group);
       break;
   }
 }
 
+#ifdef MC_LOG_ENABLED
+void
+mcLogCallback(
+  const MegaCAN::LogLevel lvl,
+  const char * msg)
+{
+  switch (lvl)
+  {
+    case MegaCAN::LogLevel::DEBUG:
+      Serial.print(F("DEBUG | "));
+      break;
+    case MegaCAN::LogLevel::INFO:
+      Serial.print(F("INFO  | "));
+      break;
+    case MegaCAN::LogLevel::WARN:
+      Serial.print(F("WARN  | "));
+      break;
+    case MegaCAN::LogLevel::ERROR:
+      Serial.print(F("ERROR | "));
+      break;
+    default:
+      return;
+  }
+  Serial.println(msg);
+}
+
+void setupLogging()
+{
+  Serial.begin(115200);
+  MegaCAN::Logging.setCallback(mcLogCallback);
+}
+#else
+void setupLogging()
+{
+  // do nothing
+}
+#endif
+
 void
 setup()
 {
-  setupLogging(115200);
+  setupLogging();
 
   cli();
 
   // MCP2515 configuration
   gpio.init();
   pinMode(CAN_INT, INPUT_PULLUP);// Configuring pin for CAN interrupt input
-  attachInterrupt(digitalPinToInterrupt(CAN_INT), can_isr, LOW);
+  attachInterrupt(digitalPinToInterrupt(CAN_INT), canISR, LOW);
 
   // setup real-time broadcast class
-  MegaCAN::RT_Bcast.setup(&ts, RT_BCAST_OFFSET, send_rt_bcast_group);
+  MegaCAN::RT_Bcast.setup(&ts, RT_BCAST_OFFSET, sendRtBcastGroup);
 
   // Setup analog inputs
   pinMode(A0, INPUT);
@@ -116,7 +156,7 @@ setup()
   // enabled interrupts
   sei();
   
-  INFO("setup complete!");
+  MC_LOG_INFO("setup complete!");
 
   // kick off first ADC conversion
   ADCSRA |= bit(ADSC);
@@ -199,7 +239,7 @@ applyNewADC(
 }
 
 // external interrupt service routine for CAN message on MCP2515
-void can_isr()
+void canISR()
 {
   gpio.interrupt();
 }
