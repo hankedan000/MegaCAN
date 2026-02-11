@@ -1,7 +1,11 @@
 name: Compile Arduino Examples
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 jobs:
   compile-examples:
     runs-on: ubuntu-latest
