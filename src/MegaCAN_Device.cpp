@@ -60,27 +60,27 @@ void mega_can_rx1_ovr(MCP_CAN *can, void *varg)
 
 void mega_can_tx_bo(MCP_CAN *can, void *varg)
 {
-	ERROR("TXBO");
+	MC_LOG_ERROR("TXBO");
 }
 
 void mega_can_tx_ep(MCP_CAN *can, void *varg, uint8_t tec)
 {
-	ERROR("TXEP (%d)",tec);
+	MC_LOG_ERROR("TXEP (%d)",tec);
 }
 
 void mega_can_rx_ep(MCP_CAN *can, void *varg, uint8_t rec)
 {
-	ERROR("RXEP (%d)",rec);
+	MC_LOG_ERROR("RXEP (%d)",rec);
 }
 
 void mega_can_tx_war(MCP_CAN *can, void *varg, uint8_t tec)
 {
-	ERROR("TXWAR (%d)",tec);
+	MC_LOG_ERROR("TXWAR (%d)",tec);
 }
 
 void mega_can_rx_war(MCP_CAN *can, void *varg, uint8_t rec)
 {
-	ERROR("RXWAR (%d)",rec);
+	MC_LOG_ERROR("RXWAR (%d)",rec);
 }
 
 static struct MCP_ErrorHandlers megaCAN_ErrHandlers{
@@ -123,7 +123,7 @@ Device::init()
 	// Initialize MCP2515 with a baudrate of 500kb/s
 	if(okay && can_.begin(MCP_STDEXT, CAN_500KBPS, MCP_8MHZ) != CAN_OK)
 	{
-		ERROR("MCP2515::begin() failed!");
+		MC_LOG_ERROR("MCP2515::begin() failed!");
 		okay = false;
 	}
 
@@ -138,20 +138,20 @@ Device::init()
 	// set the mode to "NORMAL" (only mode we can RX & TX in)
 	if (okay && can_.setMode(MCP_NORMAL) != CAN_OK)
 	{
-		ERROR("MCP2515::setMode() failed!");
+		MC_LOG_ERROR("MCP2515::setMode() failed!");
 		okay = false;
 	}
 
 	if (okay)
 	{
-		INFO("MegaCAN initialized!");
-		INFO("%d Rx CAN_Msg buffer (%dbytes)",
+		MC_LOG_INFO("MegaCAN initialized!");
+		MC_LOG_INFO("%d Rx CAN_Msg buffer (%dbytes)",
 				queue_.capacity(),
 				queue_.capacity() * sizeof(CAN_Msg));
 	}
 	else
 	{
-		ERROR("MegaCAN initialization failed!");
+		MC_LOG_ERROR("MegaCAN initialization failed!");
 	}
 }
 
@@ -193,7 +193,7 @@ Device::handle()
 	{
 		msg = queue_.getFrontPtr();
 #if LOG_CAN_TRAFFIC
-		INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->rxBuf));
+		MC_LOG_INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->rxBuf));
 #endif
 
 		if (msg->ext)
@@ -206,7 +206,7 @@ Device::handle()
 			}
 			else
 			{
-				WARN("msg not meant for me!!!");
+				MC_LOG_WARN("msg not meant for me!!!");
 			}
 		}
 		else
@@ -266,7 +266,7 @@ Device::readFromTable(
 		const uint8_t len,
 		const uint8_t *&resData)
 {
-	WARN("subclass should override readFromTable()");
+	MC_LOG_WARN("subclass should override readFromTable()");
 	return false;
 }
 
@@ -277,7 +277,7 @@ Device::writeToTable(
 		const uint8_t len,
 		const uint8_t *data)
 {
-	WARN("subclass should override writeToTable()");
+	MC_LOG_WARN("subclass should override writeToTable()");
 	return false;
 }
 
@@ -286,7 +286,7 @@ bool
 Device::burnTable(
 		const uint8_t table)
 {
-	WARN("subclass should override burnTable()");
+	MC_LOG_WARN("subclass should override burnTable()");
 	return false;
 }
 
@@ -297,7 +297,7 @@ Device::tableBlockingFactor()
 	static bool warnedOnce = false;
 	if ( ! warnedOnce)
 	{
-		WARN("using default table blocking factor");
+		MC_LOG_WARN("using default table blocking factor");
 		warnedOnce = true;
 	}
 	return 1;
@@ -310,7 +310,7 @@ Device::writeBlockingFactor()
 	static bool warnedOnce = false;
 	if ( ! warnedOnce)
 	{
-		WARN("using default write blocking factor");
+		MC_LOG_WARN("using default write blocking factor");
 		warnedOnce = true;
 	}
 	return 1;
@@ -352,7 +352,7 @@ Device::handleExtended(
 		uint8_t *data)
 {
 	uint8_t table = getTable(hdr);
-	DEBUG(
+	MC_LOG_DEBUG(
 			"handleExtended - "
 			"table: %d; toId %d; fromId: %d; type: %d; offset: %d",
 			table,
@@ -401,7 +401,7 @@ Device::handleExtended(
 		handleExtendedMsg(hdr,length,data);
 		break;
 	default:
-		ERROR("Unimplemented MSG type: %d", hdr->type);
+		MC_LOG_ERROR("Unimplemented MSG type: %d", hdr->type);
 		break;
 	}// switch
 }
@@ -416,7 +416,7 @@ Device::handleRequest(
 	uint8_t reqTable = getTable(hdr);
 	uint16_t rspOffset = getOffset(req);
 
-	DEBUG(
+	MC_LOG_DEBUG(
 			"handleRequest - "
 			"reqTable: %d; reqOffset: %d; resTable: %d; resLen: %d; resOffset: %d",
 			reqTable,
@@ -432,14 +432,14 @@ Device::handleRequest(
 
 		if (hdr->offset == 0)
 		{
-			DEBUG("CanID %d requested signature: '%s'",
+			MC_LOG_DEBUG("CanID %d requested signature: '%s'",
 					hdr->fromId,
 					__MegaCAN_SerialSignature);
 		}
 
 		if ((hdr->offset + req->rspLength) > MAX_SIGNATURE_BYTES)
 		{
-			ERROR("Requested too many bytes from signature!");
+			MC_LOG_ERROR("Requested too many bytes from signature!");
 			okay = false;
 		}
 		else
@@ -453,7 +453,7 @@ Device::handleRequest(
 
 		if (hdr->offset == 0)
 		{
-			DEBUG("CanID %d requested revision: '%s'",
+			MC_LOG_DEBUG("CanID %d requested revision: '%s'",
 					hdr->fromId,
 					__MegaCAN_SerialRevision);
 		}
@@ -484,7 +484,7 @@ Device::handleRequest(
 
 	if (resData == NULL)
 	{
-		ERROR("handleRequest - resData is NULL");
+		MC_LOG_ERROR("handleRequest - resData is NULL");
 		okay = false;
 	}
 
@@ -530,7 +530,7 @@ Device::handleExtendedMsg(
 
 	if (length < 1)
 	{
-		ERROR("Invalid EXT MSG length %d", length);
+		MC_LOG_ERROR("Invalid EXT MSG length %d", length);
 		return;
 	}
 
@@ -550,7 +550,7 @@ Device::handleExtendedMsg(
 			setTable(&rspHdr_,GET_MSG_PROT_MYVARBLK(data));
 			rspHdr_.offset = GET_MSG_PROT_MYVAROFFSET(data);
 
-			DEBUG(
+			MC_LOG_DEBUG(
 				"MSG_PROT: rspLength = %d, rspTable = %d, rspOffset = %d",
 				rspLength,
 				getTable(&rspHdr_),
@@ -570,7 +570,7 @@ Device::handleExtendedMsg(
 			}
 			else
 			{
-				ERROR("Invalid MSG_PROT rspLength %d", rspLength);
+				MC_LOG_ERROR("Invalid MSG_PROT rspLength %d", rspLength);
 				return;
 			}
 
@@ -583,14 +583,14 @@ Device::handleExtendedMsg(
 		}
 		else
 		{
-			ERROR("Invalid MSG_PROT length %d", length);
+			MC_LOG_ERROR("Invalid MSG_PROT length %d", length);
 			return;
 		}
 		break;
 	}// END -- MSG_PROT handling
 
 	default:
-		ERROR("Unimplemented EXT_MSG type: %d", data[0]);
+		MC_LOG_ERROR("Unimplemented EXT_MSG type: %d", data[0]);
 		break;
 	}
 }
@@ -605,7 +605,7 @@ Device::sendMsgBuf(
 	uint8_t res = CAN_OK;
 
 #if LOG_CAN_TRAFFIC
-		INFO("BUS <<< MCU %s", fmtCAN_DebugStr(id,ext,len,buf));
+		MC_LOG_INFO("BUS <<< MCU %s", fmtCAN_DebugStr(id,ext,len,buf));
 #endif
 
 	/**

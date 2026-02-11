@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "logging.h"
+#include "MegaCAN/Logging.h"
 #include "MSG_defn.h"
 
 #include <util/atomic.h>

@@ -1,7 +1,7 @@
 #include "MegaCAN_RT_BroadcastHelper.h"
 
 #include "FlashUtils.h"
-#include "logging.h"
+#include "MegaCAN/Logging.h"
 
 void
 __RT_BCastTaskCallback();
@@ -62,7 +62,7 @@ RT_BroadcastHelper::execute()
 				task_->setInterval((1000 / 50) * TASK_MILLISECOND);
 				break;
 			default:
-				WARN("invalid rate %d",ctrl.bits.rate);
+				MC_LOG_WARN("invalid rate %d",ctrl.bits.rate);
 				break;
 		}
 	}

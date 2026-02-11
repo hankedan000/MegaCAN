@@ -36,7 +36,7 @@ ExtDevice::readFromTable(
 		const uint8_t len,
 		const uint8_t *&resData)
 {
-	DEBUG(
+	MC_LOG_DEBUG(
 		"readFromTable - table = %d; offset = %d; len = %d",
 		table,
 		offset,
@@ -44,19 +44,19 @@ ExtDevice::readFromTable(
 
 	if (table > numTables_)
 	{
-		ERROR("%d > numTables_", table);
+		MC_LOG_ERROR("%d > numTables_", table);
 		return false;
 	}
 
 	const TableDescriptor_t &td = tables_[table];
 	if (td.tableData == nullptr)
 	{
-		ERROR("null table %d", table);
+		MC_LOG_ERROR("null table %d", table);
 		return false;
 	}
 	else if ((offset + len) > td.tableSize)
 	{
-		ERROR("outofbound - table %d; offset; %d; len; %d", table, offset, len);
+		MC_LOG_ERROR("outofbound - table %d; offset; %d; len; %d", table, offset, len);
 		return false;
 	}
 
@@ -83,7 +83,7 @@ ExtDevice::writeToTable(
 	const uint8_t len,
 	const uint8_t *data)
 {
-	DEBUG(
+	MC_LOG_DEBUG(
 		"writeToTable - table = %d; offset = %d; len = %d",
 		table,
 		offset,
@@ -91,20 +91,20 @@ ExtDevice::writeToTable(
 
 	if (table > numTables_)
 	{
-		ERROR("%d > numTables_", table);
+		MC_LOG_ERROR("%d > numTables_", table);
 		return false;
 	}
 
 	const TableDescriptor_t &td = tables_[table];
 	if (td.tableData == nullptr)
 	{
-		ERROR("null table %d", table);
+		MC_LOG_ERROR("null table %d", table);
 		return false;
 	}
 
 	if ((offset + len) > td.tableSize)
 	{
-		ERROR("outofbound - table %d; offset; %d; len; %d", table, offset, len);
+		MC_LOG_ERROR("outofbound - table %d; offset; %d; len; %d", table, offset, len);
 		return false;
 	}
 
@@ -142,25 +142,25 @@ ExtDevice::burnTable(
 {
 	if (table != currFlashTable_)
 	{
-		ERROR("table to burn is %d but current is %d", table, currFlashTable_);
+		MC_LOG_ERROR("table to burn is %d but current is %d", table, currFlashTable_);
 		return false;
 	}
 	else if (table >= numTables_)
 	{
-		ERROR("invalid table %d", table);
+		MC_LOG_ERROR("invalid table %d", table);
 		return false;
 	}
 	else if ( ! needsBurn_)
 	{
 		// be nice and don't use unecessary write cycles on flash
-		WARN("flash was never modified. ignoring burn request");
+		MC_LOG_WARN("flash was never modified. ignoring burn request");
 		return true;
 	}
 	
 	const TableDescriptor_t &td = tables_[table];
 	if (td.tableType != TableType_E::eFlash)
 	{
-		ERROR("requested burn to non-flash table %d", table);
+		MC_LOG_ERROR("requested burn to non-flash table %d", table);
 		return false;
 	}
 	
@@ -196,7 +196,7 @@ ExtDevice::loadFlashTable(
 	{
 		// TODO could be nice and write to flash, but hoping TunerStudio
 		// is smart enough to not put us in here. We'll see...
-		WARN("unburned flash contents being lost");
+		MC_LOG_WARN("unburned flash contents being lost");
 		flashDataLost_ = true;
 	}
 
@@ -209,7 +209,7 @@ ExtDevice::loadFlashTable(
 	currFlashTable_ = table;
 	needsBurn_ = false;
 	memset(dirtyFlashBits_,0,MEGA_CAN_EXT_NUM_DIRTY_FLASH_WORDS);// reset all dirty bits
-	DEBUG("loaded %dbytes from flash table %d", td.tableSize, table);
+	MC_LOG_DEBUG("loaded %dbytes from flash table %d", td.tableSize, table);
 	
 	return true;
 }
