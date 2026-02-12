@@ -160,12 +160,14 @@ Device::interrupt()
 {
 	CAN_Msg *msg = queue_.getBackPtr();
 
-	while (can_.readMsgBuf(&msg->id,&msg->ext,&msg->len,msg->rxBuf) == CAN_OK)
+	// TODO just make readMsgBuf() take a CAN_Msg instead of sneaking around it here
+	uint8_t msgLen = 0;
+	while (can_.readMsgBuf(&msg->id,&msg->ext,&msgLen,msg->data.data()) == CAN_OK)
 	{
 		// see if we should handle the broadcast messages immediately
 		if (opts_.handleStandardMsgsImmediately && msg->ext == 0)
 		{
-			handleStandard(msg->id,msg->len,msg->rxBuf);
+			handleStandard(msg->id,msgLen,msg->data.data());
 		}
 		else
 		{
@@ -193,7 +195,7 @@ Device::handle()
 	{
 		msg = queue_.getFrontPtr();
 #if LOG_CAN_TRAFFIC
-		MC_LOG_INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->rxBuf));
+		MC_LOG_INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->data.data()));
 #endif
 
 		if (msg->ext)
@@ -202,7 +204,7 @@ Device::handle()
 
 			if(hdr->toId == myID_)
 			{
-				handleExtended(hdr,msg->len,msg->rxBuf);
+				handleExtended(hdr,msg->data.size(),msg->data.data());
 			}
 			else
 			{
@@ -211,7 +213,7 @@ Device::handle()
 		}
 		else
 		{
-			handleStandard(msg->id,msg->len,msg->rxBuf);
+			handleStandard(msg->id,msg->data.size(),msg->data.data());
 		}
 
 		queue_.pop();
@@ -390,7 +392,7 @@ Device::handleExtended(
 		txBuf_[0] = MSG_BURNACK;
 		txBuf_[1] = (burnOkay ? 1 : 0);
 
-		if ( ! sendMsgBuf(rspHdr_.marshal(),true,2,txBuf_))
+		if ( ! sendMsgBuf(rspHdr_.marshal(),true,2,txBuf_.data()))
 		{
 			INC_ERROR_COUNTER(canLogicErrorCount_);
 			canStatus_ |= CAN_STATUS_TX_FAILED;
@@ -471,7 +473,7 @@ Device::handleRequest(
 				txBuf_[i] = '\0';
 			}
 		}
-		resData = txBuf_;
+		resData = txBuf_.data();
 	}
 	else
 	{
@@ -510,9 +512,8 @@ Device::handleRequest(
 	else
 	{
 		// handle response, but send back zeros
-		memset(txBuf_,0,req->rspLength);
-
-		if ( ! sendMsgBuf(rspHdr_.marshal(),true,req->rspLength,txBuf_))
+		txBuf_.resize(req->rspLength, 0u);
+		if ( ! sendMsgBuf(rspHdr_.marshal(),true,txBuf_.size(),txBuf_.data()))
 		{
 			INC_ERROR_COUNTER(canLogicErrorCount_);
 			canStatus_ |= CAN_STATUS_TX_FAILED;
@@ -575,7 +576,7 @@ Device::handleExtendedMsg(
 			}
 
 			// send protocol response
-			if ( ! sendMsgBuf(rspHdr_.marshal(),true,rspLength,txBuf_))
+			if ( ! sendMsgBuf(rspHdr_.marshal(),true,rspLength,txBuf_.data()))
 			{
 				INC_ERROR_COUNTER(canLogicErrorCount_);
 				canStatus_ |= CAN_STATUS_TX_FAILED;

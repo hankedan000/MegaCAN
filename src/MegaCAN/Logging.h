@@ -25,9 +25,9 @@
 // the "##" will remove comma when there are no variable arguments provided
 #ifdef ARDUINO
 #include <avr/pgmspace.h>
-#define MC_LOG(lvl,fmt,...) MegaCAN::Logging.log(lvl,PSTR(fmt),##__VA_ARGS__)
+#define MC_LOG(lvl,fmt,...) MegaCAN::Logging.log(lvl,PSTR(fmt),##__VA_ARGS__);
 #else
-#define MC_LOG(lvl,fmt,...) MegaCAN::Logging.log(lvl,fmt,##__VA_ARGS__)
+#define MC_LOG(lvl,fmt,...) MegaCAN::Logging.log(lvl,fmt,##__VA_ARGS__);
 #endif
 
 #if (MC_LOG_LVL_DEBUG_I < MC_LOG_THRESHOLD)

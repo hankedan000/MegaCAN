@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "MegaCAN/Logging.h"
+#include "MegaCAN/StaticVector.h"
 #include "MSG_defn.h"
 
 #include <util/atomic.h>
@@ -33,16 +34,17 @@
 namespace MegaCAN
 {
 
+static constexpr unsigned int MAX_CAN_DATA_BYTES = 8u;
+using CAN_DataBuffer = StaticVector<uint8_t, MAX_CAN_DATA_BYTES, uint8_t>;
+
 struct CAN_Msg
 {
 	// 11bit or 29bit identifier
 	uint32_t id;
 	// true if id is 29bits
-	uint8_t  ext;
-	// the length of data in the rxBuff
-	uint8_t  len;
-	// the payload attachment
-	uint8_t  rxBuf[8];
+	uint8_t ext;
+	// buffer of data bytes
+	CAN_DataBuffer data;
 };
 
 class CAN_MsgQueue
@@ -520,7 +522,7 @@ private:
 	uint8_t numSimReqDropsLeft_;
 
 	// Buffer of CAN frame data used for building responses
-	uint8_t txBuf_[8];
+	CAN_DataBuffer txBuf_;
 
 	// Header structure used for building CAN responses
 	MS_HDR_t rspHdr_;
