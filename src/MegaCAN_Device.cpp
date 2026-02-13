@@ -1,5 +1,7 @@
 #include "MegaCAN_Device.h"
 
+#include "MegaCAN/Panic.h"
+
 #define INC_ERROR_COUNTER(VAR) if(VAR!=0xFF){VAR++;}
 #define IS_VISIBLE_ASCII(c) (c >= 32 && c <= 126)
 
@@ -46,73 +48,19 @@ namespace MegaCAN
 	}
 #endif
 
-void mega_can_rx0_ovr(MCP_CAN *can, void *varg)
-{
-	MegaCAN::Device *mcd = (MegaCAN::Device*)varg;
-	INC_ERROR_COUNTER(mcd->canHW_Rx0_OverflowCount_);
-}
-
-void mega_can_rx1_ovr(MCP_CAN *can, void *varg)
-{
-	MegaCAN::Device *mcd = (MegaCAN::Device*)varg;
-	INC_ERROR_COUNTER(mcd->canHW_Rx1_OverflowCount_);
-}
-
-void mega_can_tx_bo(MCP_CAN *can, void *varg)
-{
-	MC_LOG_ERROR("TXBO");
-}
-
-void mega_can_tx_ep(MCP_CAN *can, void *varg, uint8_t tec)
-{
-	MC_LOG_ERROR("TXEP (%d)",tec);
-}
-
-void mega_can_rx_ep(MCP_CAN *can, void *varg, uint8_t rec)
-{
-	MC_LOG_ERROR("RXEP (%d)",rec);
-}
-
-void mega_can_tx_war(MCP_CAN *can, void *varg, uint8_t tec)
-{
-	MC_LOG_ERROR("TXWAR (%d)",tec);
-}
-
-void mega_can_rx_war(MCP_CAN *can, void *varg, uint8_t rec)
-{
-	MC_LOG_ERROR("RXWAR (%d)",rec);
-}
-
-static struct MCP_ErrorHandlers megaCAN_ErrHandlers{
-	.rx0_ovr = mega_can_rx0_ovr,
-	.rx1_ovr = mega_can_rx1_ovr,
-	.tx_bo   = mega_can_tx_bo,
-	.tx_ep   = mega_can_tx_ep,
-	.rx_ep   = mega_can_rx_ep,
-	.tx_war  = mega_can_tx_war,
-	.rx_war  = mega_can_rx_war,
-	.e_warn  = NULL
-};
-
 Device::Device(
-		uint8_t cs,
-		uint8_t myId,
-		uint8_t intPin,
-		CAN_Msg *buff,
-		uint8_t buffSize)
-	: can_(cs)
-	, myID_(myId)
-	, intPin_(intPin)
-	, queue_(buff,buffSize)
+	const SharedPtr<HAL::CAN_Bus> & canBus,
+	const uint8_t myMsqId)
+	: canBus_(canBus)
+	, myID_(myMsqId)
 	, canStatus_(0x0)
 	, numSimReqDropsLeft_(0)
 {
+	if ( ! canBus_) {
+		MC_PANIC("canBus can't be null");
+	}
 	resetErrorCounters();
 	setupOptions();
-}
-
-Device::~Device()
-{
 }
 
 void
@@ -120,34 +68,35 @@ Device::init()
 {
 	bool okay = true;
 
+	// TODO move this logic out
 	// Initialize MCP2515 with a baudrate of 500kb/s
-	if(okay && can_.begin(MCP_STDEXT, CAN_500KBPS, MCP_8MHZ) != CAN_OK)
-	{
-		MC_LOG_ERROR("MCP2515::begin() failed!");
-		okay = false;
-	}
+	// if(okay && can_.begin(MCP_STDEXT, CAN_500KBPS, MCP_8MHZ) != CAN_OK)
+	// {
+	// 	MC_LOG_ERROR("MCP2515::begin() failed!");
+	// 	okay = false;
+	// }
 
-	/**
-	 * setup hardware-based CAN filters
-	 * 
-	 * The default will filter by the Megasquirt CAN device ID, but the
-	 * subclass override the method to provide more custom filters.
-	 */
-	applyCanFilters(&can_);
+	// /**
+	//  * setup hardware-based CAN filters
+	//  * 
+	//  * The default will filter by the Megasquirt CAN device ID, but the
+	//  * subclass override the method to provide more custom filters.
+	//  */
+	// applyCanFilters(&can_);
 
-	// set the mode to "NORMAL" (only mode we can RX & TX in)
-	if (okay && can_.setMode(MCP_NORMAL) != CAN_OK)
-	{
-		MC_LOG_ERROR("MCP2515::setMode() failed!");
-		okay = false;
-	}
+	// // set the mode to "NORMAL" (only mode we can RX & TX in)
+	// if (okay && can_.setMode(MCP_NORMAL) != CAN_OK)
+	// {
+	// 	MC_LOG_ERROR("MCP2515::setMode() failed!");
+	// 	okay = false;
+	// }
 
 	if (okay)
 	{
 		MC_LOG_INFO("MegaCAN initialized!");
-		MC_LOG_INFO("%d Rx CAN_Msg buffer (%dbytes)",
+		MC_LOG_INFO("%d Rx CAN_Msg buffer (%ldbytes)",
 				queue_.capacity(),
-				queue_.capacity() * sizeof(CAN_Msg));
+				queue_.capacity() * sizeof(HAL::CAN_Msg));
 	}
 	else
 	{
@@ -158,16 +107,14 @@ Device::init()
 void
 Device::interrupt()
 {
-	CAN_Msg *msg = queue_.getBackPtr();
+	auto msg = queue_.getBackPtr();
 
-	// TODO just make readMsgBuf() take a CAN_Msg instead of sneaking around it here
-	uint8_t msgLen = 0;
-	while (can_.readMsgBuf(&msg->id,&msg->ext,&msgLen,msg->data.data()) == CAN_OK)
+	while (canBus_->readAny(*msg) == HAL::CAN_Bus::RetCode::OK)
 	{
 		// see if we should handle the broadcast messages immediately
 		if (opts_.handleStandardMsgsImmediately && msg->ext == 0)
 		{
-			handleStandard(msg->id,msgLen,msg->data.data());
+			handleStandard(msg->id, msg->data);
 		}
 		else
 		{
@@ -183,17 +130,14 @@ Device::interrupt()
 			}
 		}
 	}
-
-	can_.serviceErrors((void*)this,&megaCAN_ErrHandlers);
 }
 
 void
 Device::handle()
 {
-	const CAN_Msg *msg = nullptr;
-	while (!queue_.isEmpty())
+	while ( ! queue_.isEmpty())
 	{
-		msg = queue_.getFrontPtr();
+		const auto msg = queue_.getFrontPtr();
 #if LOG_CAN_TRAFFIC
 		MC_LOG_INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->data.data()));
 #endif
@@ -202,9 +146,9 @@ Device::handle()
 		{
 			const MS_HDR_t* hdr = reinterpret_cast<const MS_HDR_t*>(&msg->id);
 
-			if(hdr->toId == myID_)
+			if (hdr->toId == myID_)
 			{
-				handleExtended(hdr,msg->data.size(),msg->data.data());
+				handleExtended(hdr,msg->data);
 			}
 			else
 			{
@@ -213,20 +157,11 @@ Device::handle()
 		}
 		else
 		{
-			handleStandard(msg->id,msg->data.size(),msg->data.data());
+			handleStandard(msg->id, msg->data);
 		}
 
 		queue_.pop();
 	}
-}
-
-bool
-Device::send11bitFrame(
-	uint16_t id,
-	uint8_t len,
-	uint8_t *buf)
-{
-	return sendMsgBuf(id,0,len,buf);
 }
 
 //--------------------------------------------------------------------
@@ -240,33 +175,12 @@ Device::getOptions(
 	// base impl leaves defaults
 }
 
-void
-Device::applyCanFilters(
-	MCP_CAN *can)
-{
-	// setup the CAN mask/filters
-	uint32_t mask = 0x0;
-	uint32_t filt = 0x0;
-	MS_HDR_t *maskHdr = reinterpret_cast<MS_HDR_t*>(&mask);
-	MS_HDR_t *filtHdr = reinterpret_cast<MS_HDR_t*>(&filt);
-	maskHdr->toId = 0xf;// only check the 4bit toId in the megasquirt header
-	filtHdr->toId = myID_ & 0xf;// make sure the message is for me!
-	can->init_Mask(0,1,mask);
-	can->init_Mask(1,1,mask);
-	can->init_Filt(0,1,filt);
-	can->init_Filt(1,1,filt);
-	can->init_Filt(2,1,filt);
-	can->init_Filt(3,1,filt);
-	can->init_Filt(4,1,filt);
-	can->init_Filt(5,1,filt);
-}
-
 bool
 Device::readFromTable(
 		const uint8_t table,
 		const uint16_t offset,
 		const uint8_t len,
-		const uint8_t *&resData)
+		HAL::CAN_DataBuffer & dataOut)
 {
 	MC_LOG_WARN("subclass should override readFromTable()");
 	return false;
@@ -276,8 +190,7 @@ bool
 Device::writeToTable(
 		const uint8_t table,
 		const uint16_t offset,
-		const uint8_t len,
-		const uint8_t *data)
+		const HAL::CAN_DataBuffer & data)
 {
 	MC_LOG_WARN("subclass should override writeToTable()");
 	return false;
@@ -321,8 +234,7 @@ Device::writeBlockingFactor()
 void
 Device::handleStandard(
 		const uint32_t id,
-		const uint8_t length,
-		uint8_t* data)
+		const HAL::CAN_DataBuffer & data)
 {
 	// base class doesn't provide broadcast support
 	// overide this method, or use MegaCan_WithBroadcast
@@ -350,8 +262,7 @@ Device::setupOptions()
 void
 Device::handleExtended(
 		const MS_HDR_t *hdr,
-		const uint8_t length,
-		uint8_t *data)
+		const HAL::CAN_DataBuffer & data)
 {
 	uint8_t table = getTable(hdr);
 	MC_LOG_DEBUG(
@@ -367,7 +278,7 @@ Device::handleExtended(
 	{
 	case MSG_CMD:
 		// TODO do something with return value
-		writeToTable(table,hdr->offset,length,data);
+		writeToTable(table,hdr->offset,data);
 		break;
 	case MSG_REQ:
 		if (numSimReqDropsLeft_ == 0)
@@ -389,10 +300,13 @@ Device::handleExtended(
 		rspHdr_.type = MSG_XTND;
 		setTable(&rspHdr_,0);// don't care
 		rspHdr_.offset = 0;// don't care
-		txBuf_[0] = MSG_BURNACK;
-		txBuf_[1] = (burnOkay ? 1 : 0);
+		txMsg_.ext = 1;
+		txMsg_.id = rspHdr_.marshal();
+		txMsg_.data.resize_nofill(2u);
+		txMsg_.data[0] = MSG_BURNACK;
+		txMsg_.data[1] = (burnOkay ? 1 : 0);
 
-		if ( ! sendMsgBuf(rspHdr_.marshal(),true,2,txBuf_.data()))
+		if ( ! sendMsg(txMsg_))
 		{
 			INC_ERROR_COUNTER(canLogicErrorCount_);
 			canStatus_ |= CAN_STATUS_TX_FAILED;
@@ -400,7 +314,7 @@ Device::handleExtended(
 		break;
 	}
 	case MSG_XTND:
-		handleExtendedMsg(hdr,length,data);
+		handleExtendedMsg(hdr, data);
 		break;
 	default:
 		MC_LOG_ERROR("Unimplemented MSG type: %d", hdr->type);
@@ -410,11 +324,11 @@ Device::handleExtended(
 
 void
 Device::handleRequest(
-		const MS_HDR_t *hdr,
-		uint8_t *reqData)
+		const MS_HDR_t * hdr,
+		const HAL::CAN_DataBuffer & reqData)
 {
 	bool okay = true;
-	MSG_REQ_t* req = reinterpret_cast<MSG_REQ_t*>(reqData);
+	auto req = reinterpret_cast<const MSG_REQ_t*>(reqData.data());
 	uint8_t reqTable = getTable(hdr);
 	uint16_t rspOffset = getOffset(req);
 
@@ -427,7 +341,7 @@ Device::handleRequest(
 			req->rspLength,
 			rspOffset);
 
-	const uint8_t *resData = NULL;
+	txMsg_.data.resize_nofill(0);
 	if (reqTable == TABLE_NO_SIG)
 	{
 		// Send the firmware signature
@@ -446,7 +360,19 @@ Device::handleRequest(
 		}
 		else
 		{
-			resData = __MegaCAN_SerialSignature + hdr->offset;
+			// send the firmware signature. pad with trailing zeros.
+			uint16_t offset = hdr->offset;
+			for (uint8_t i=0; i<req->rspLength; i++, offset++)
+			{
+				if (offset < MAX_SIGNATURE_BYTES)
+				{
+					txMsg_.data.push_back(__MegaCAN_SerialRevision[offset]);
+				}
+				else
+				{
+					txMsg_.data.push_back('\0');
+				}
+			}
 		}
 	}
 	else if (reqTable == TABLE_NO_REV)
@@ -466,14 +392,13 @@ Device::handleRequest(
 		{
 			if (offset < __MegaCAN_SerialRevisionLen)
 			{
-				txBuf_[i] = __MegaCAN_SerialRevision[offset];
+				txMsg_.data.push_back(__MegaCAN_SerialRevision[offset]);
 			}
 			else
 			{
-				txBuf_[i] = '\0';
+				txMsg_.data.push_back('\0');
 			}
 		}
-		resData = txBuf_.data();
 	}
 	else
 	{
@@ -481,13 +406,7 @@ Device::handleRequest(
 				reqTable,
 				hdr->offset,
 				req->rspLength,
-				resData);
-	}
-
-	if (resData == NULL)
-	{
-		MC_LOG_ERROR("handleRequest - resData is NULL");
-		okay = false;
+				txMsg_.data);
 	}
 
 	rspHdr_.toId = hdr->fromId;
@@ -495,15 +414,13 @@ Device::handleRequest(
 	rspHdr_.type = MSG_RSP;
 	setTable(&rspHdr_,req->rspTable);
 	rspHdr_.offset = rspOffset;
+	txMsg_.ext = 1;
+	txMsg_.id = rspHdr_.marshal();
 
 	if (okay)
 	{
 		// send MSG_RSP packet
-		if ( ! sendMsgBuf(
-				rspHdr_.marshal(),
-				true,
-				req->rspLength,
-				const_cast<uint8_t*>(resData)))
+		if ( ! sendMsg(txMsg_))
 		{
 			INC_ERROR_COUNTER(canLogicErrorCount_);
 			canStatus_ |= CAN_STATUS_TX_FAILED;
@@ -512,8 +429,8 @@ Device::handleRequest(
 	else
 	{
 		// handle response, but send back zeros
-		txBuf_.resize(req->rspLength, 0u);
-		if ( ! sendMsgBuf(rspHdr_.marshal(),true,txBuf_.size(),txBuf_.data()))
+		txMsg_.data.resize(req->rspLength, 0u);
+		if ( ! sendMsg(txMsg_))
 		{
 			INC_ERROR_COUNTER(canLogicErrorCount_);
 			canStatus_ |= CAN_STATUS_TX_FAILED;
@@ -524,14 +441,13 @@ Device::handleRequest(
 void
 Device::handleExtendedMsg(
 		const MS_HDR_t *hdr,
-		const uint8_t length,
-		uint8_t *data)
+		const HAL::CAN_DataBuffer & data)
 {
 	uint8_t rspLength;
 
-	if (length < 1)
+	if (data.size() < 1)
 	{
-		MC_LOG_ERROR("Invalid EXT MSG length %d", length);
+		MC_LOG_ERROR("Invalid EXT MSG length %d", data.size());
 		return;
 	}
 
@@ -540,7 +456,7 @@ Device::handleExtendedMsg(
 
 	case MSG_PROT:
 	{
-		if (length == 4)
+		if (data.size() == 4)
 		{
 			rspLength = GET_MSG_PROT_VARBYT(data);
 
@@ -557,17 +473,21 @@ Device::handleExtendedMsg(
 				getTable(&rspHdr_),
 				rspHdr_.offset);
 
-			txBuf_[0] = 2;// serial version
 			if (rspLength == 1)
 			{
-				// nothing else to set besides serial version
+				// send serial version
+				txMsg_.data.resize_nofill(1);
+				txMsg_.data[0] = 2;// serial version
 			}
 			else if(rspLength == 5)
 			{
-				txBuf_[1] = tableBlockingFactor() >> 8;  // high byte
-				txBuf_[2] = tableBlockingFactor() & 0xff;// low byte
-				txBuf_[3] = writeBlockingFactor() >> 8;  // high byte
-				txBuf_[4] = writeBlockingFactor() & 0xff;// low byte
+				// send serial version with block factor
+				txMsg_.data.resize_nofill(5);
+				txMsg_.data[0] = 2;// serial version
+				txMsg_.data[1] = tableBlockingFactor() >> 8;  // high byte
+				txMsg_.data[2] = tableBlockingFactor() & 0xff;// low byte
+				txMsg_.data[3] = writeBlockingFactor() >> 8;  // high byte
+				txMsg_.data[4] = writeBlockingFactor() & 0xff;// low byte
 			}
 			else
 			{
@@ -576,7 +496,9 @@ Device::handleExtendedMsg(
 			}
 
 			// send protocol response
-			if ( ! sendMsgBuf(rspHdr_.marshal(),true,rspLength,txBuf_.data()))
+			txMsg_.ext = 1;
+			txMsg_.id = rspHdr_.marshal();
+			if ( ! sendMsg(txMsg_))
 			{
 				INC_ERROR_COUNTER(canLogicErrorCount_);
 				canStatus_ |= CAN_STATUS_TX_FAILED;
@@ -584,7 +506,7 @@ Device::handleExtendedMsg(
 		}
 		else
 		{
-			MC_LOG_ERROR("Invalid MSG_PROT length %d", length);
+			MC_LOG_ERROR("Invalid MSG_PROT length %d", data.size());
 			return;
 		}
 		break;
@@ -597,16 +519,13 @@ Device::handleExtendedMsg(
 }
 
 bool
-Device::sendMsgBuf(
-	uint32_t id,
-	uint8_t ext,
-	uint8_t len,
-	uint8_t *buf)
+Device::sendMsg(
+	const HAL::CAN_Msg & msg)
 {
-	uint8_t res = CAN_OK;
+	auto rc = HAL::CAN_Bus::RetCode::OK;
 
 #if LOG_CAN_TRAFFIC
-		MC_LOG_INFO("BUS <<< MCU %s", fmtCAN_DebugStr(id,ext,len,buf));
+		MC_LOG_INFO("BUS <<< MCU %s", fmtCAN_DebugStr(msg.id,msg.ext,msg.data.size(),msg.data.data()));
 #endif
 
 	/**
@@ -616,10 +535,10 @@ Device::sendMsgBuf(
 	 * SPI.transfer() while waiting for the SPIF interrupt flag to get set.
 	 */
 	MC_ATOMIC_START
-	res = can_.sendMsgBuf(id,ext,len,buf,false);// false -> don't wait for send
+	rc = canBus_->sendAny(msg,false);// false -> don't wait for send
 	MC_ATOMIC_END
 
-	return res == CAN_OK;
+	return rc == HAL::CAN_Bus::RetCode::OK;
 }
 
 }// namespace - MegaCAN

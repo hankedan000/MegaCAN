@@ -1,5 +1,4 @@
-#ifndef MEGACAN_EXT_DEVICE_H_
-#define MEGACAN_EXT_DEVICE_H_
+#pragma once
 
 #include "MegaCAN_ExtTypes.h"
 #include "MegaCAN_Device.h"
@@ -21,21 +20,17 @@ class ExtDevice : public MegaCAN::Device
 {
 public:
 	using OnTableWrittenCallback = void (*)(
-		uint8_t /*table*/,
-		uint16_t /*offset*/,
-		uint8_t /*len*/,
-		const uint8_t */*data*/);
+		uint8_t table,
+		uint16_t offset,
+		const HAL::CAN_DataBuffer & data);
 	using OnTableBurnedCallback = void (*)(
-		uint8_t /*table*/);
+		uint8_t table);
 	
 public:
 	ExtDevice(
-			uint8_t cs,
-			uint8_t myId,
-			uint8_t intPin,
-			CAN_Msg *buff,
-			uint8_t buffSize,
-			const TableDescriptor_t *tables,
+			const SharedPtr<HAL::CAN_Bus> & canBus,
+			const uint8_t myMsqId,
+			const TableDescriptor_t * tables,
 			uint8_t numTables);
 
 	bool
@@ -91,33 +86,32 @@ protected:
 	 * @return
 	 * True if the read is valid, false if not.
 	 */
-	virtual bool
+	bool
 	readFromTable(
-			const uint8_t table,
-			const uint16_t offset,
-			const uint8_t len,
-			const uint8_t *&resData) override;
-
-	virtual bool
-	writeToTable(
 		const uint8_t table,
 		const uint16_t offset,
 		const uint8_t len,
-		const uint8_t *data) override;
+		HAL::CAN_DataBuffer & dataOut) final;
+
+	bool
+	writeToTable(
+		const uint8_t table,
+		const uint16_t offset,
+		const HAL::CAN_DataBuffer & data) final;
 
 	// called by base class when we should burn the current flash table
-	virtual bool
+	bool
 	burnTable(
-			const uint8_t table) override;
+			const uint8_t table) final;
 	
-	virtual uint16_t
-	tableBlockingFactor() override
+	uint16_t
+	tableBlockingFactor() final
 	{
 		return 32;
 	}
 	
-	virtual uint16_t
-	writeBlockingFactor() override
+	uint16_t
+	writeBlockingFactor() final
 	{
 		return 32;
 	}
@@ -168,5 +162,3 @@ private:
 };
 
 }// namespace - MegaCAN
-
-#endif

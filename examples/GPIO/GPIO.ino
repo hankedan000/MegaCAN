@@ -34,7 +34,6 @@ DECL_MEGA_CAN_SIG("OpenGPIO-0.1.0     ");
 
 #define RT_BCAST_OFFSET PAGE2_FIELD_OFFSET(rtBcast)
 
-MegaCAN::CAN_Msg can_buff[CAN_MSG_BUFFER_SIZE];
 MegaCAN::ExtDevice gpio(CAN_CS,CAN_ID,CAN_INT,can_buff,CAN_MSG_BUFFER_SIZE,TABLES,NUM_TABLES);
 
 // Scheduler

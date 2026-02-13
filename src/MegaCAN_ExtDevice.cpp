@@ -1,7 +1,7 @@
 #include "MegaCAN_ExtDevice.h"
 
-#include <avr/wdt.h>
 #include <EEPROM.h>
+#include "MegaCAN/Watchdog.h"
 
 namespace MegaCAN
 {
@@ -10,14 +10,11 @@ namespace MegaCAN
 uint8_t tempPage[MEGA_CAN_EXT_MAX_FLASH_TABLE_SIZE];
 
 ExtDevice::ExtDevice(
-		uint8_t cs,
-		uint8_t myId,
-		uint8_t intPin,
-		CAN_Msg *buff,
-		uint8_t buffSize,
+		const SharedPtr<HAL::CAN_Bus> & canBus,
+		const uint8_t myMsqId,
 		const TableDescriptor_t *tables,
 		uint8_t numTables)
- : MegaCAN::Device(cs,myId,intPin,buff,buffSize)
+ : MegaCAN::Device(canBus, myMsqId)
  , tables_(tables)
  , numTables_(numTables)
  , currFlashTable_(numTables)
@@ -34,7 +31,7 @@ ExtDevice::readFromTable(
 		const uint8_t table,
 		const uint16_t offset,
 		const uint8_t len,
-		const uint8_t *&resData)
+		HAL::CAN_DataBuffer & dataOut)
 {
 	MC_LOG_DEBUG(
 		"readFromTable - table = %d; offset = %d; len = %d",
@@ -69,10 +66,14 @@ ExtDevice::readFromTable(
 		}
 	}
 
-	// return pointer to data within table
+	// copy the tabel data into the response data buffer
 	// Note: when tables are loaded in from flash tableData will point to RAM
-	resData = (uint8_t*)(td.tableData) + offset;
-		
+	dataOut.resize_nofill(len);
+	auto readFromPtr = static_cast<uint8_t *>(td.tableData) + offset;
+	for (uint8_t i=0u; i<len; i++, readFromPtr++)
+	{
+		dataOut[i] = *readFromPtr;
+	}
 	return true;
 }
 
@@ -80,8 +81,7 @@ bool
 ExtDevice::writeToTable(
 	const uint8_t table,
 	const uint16_t offset,
-	const uint8_t len,
-	const uint8_t *data)
+	const HAL::CAN_DataBuffer & data)
 {
 	MC_LOG_DEBUG(
 		"writeToTable - table = %d; offset = %d; len = %d",
@@ -102,9 +102,9 @@ ExtDevice::writeToTable(
 		return false;
 	}
 
-	if ((offset + len) > td.tableSize)
+	if ((offset + data.size()) > td.tableSize)
 	{
-		MC_LOG_ERROR("outofbound - table %d; offset; %d; len; %d", table, offset, len);
+		MC_LOG_ERROR("outofbound - table %d; offset; %d; len; %d", table, offset, data.size());
 		return false;
 	}
 
@@ -118,9 +118,9 @@ ExtDevice::writeToTable(
 	}
 
 	// write data to temporary RAM location where flash was loaded
-	needsBurn_ = (td.tableType == TableType_E::eFlash) && (len > 0);
+	needsBurn_ = (td.tableType == TableType_E::eFlash) && (data.size() > 0);
 	uint16_t flashOffset = offset;
-	for (uint8_t i=0; i<len; i++)
+	for (uint8_t i=0; i<data.size(); i++)
 	{
 		dirtyFlashBits_[flashOffset/8] |= 1<<(flashOffset%8);// update dirty bits
 		((uint8_t*)(td.tableData))[flashOffset] = data[i];
@@ -130,7 +130,7 @@ ExtDevice::writeToTable(
 	// notify optional user callback
 	if (onTableWrittenCallback_)
 	{
-		onTableWrittenCallback_(table,offset,len,data);
+		onTableWrittenCallback_(table, offset, data);
 	}
 		
 	return true;
@@ -171,7 +171,7 @@ ExtDevice::burnTable(
 		{
 			// writing to EEPROM is slow (~3.4ms per byte)
 			// keep watchdog happy if user code uses it
-			wdt_reset();
+			resetWatchdog();
 
 			EEPROM.write(td.flashOffset + i, ((uint8_t*)(td.tableData))[i]);
 		}

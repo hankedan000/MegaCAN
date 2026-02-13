@@ -132,6 +132,13 @@ namespace MegaCAN
             size_ = new_size;
         }
 
+        void resize_nofill(size_type new_size) {
+            if (new_size > Capacity) {
+                MC_PANIC("StaticVector::resize_nofill - bad size")
+            }
+            size_ = new_size;
+        }
+
         // ----- Iterators -----
 
         iterator begin() { return data_; }

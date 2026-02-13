@@ -1,21 +1,13 @@
-#ifndef MEGA_CAN_BASE_H_
-#define MEGA_CAN_BASE_H_
-
-#include <Arduino.h>
-#include <SPI.h>
-#include <mcp_can/mcp_can.h>
-#include <avr/interrupt.h>
+#pragma once
 
 #include <string.h>
 #include <stdint.h>
 
+#include "MegaCAN/hal/CAN_Bus.h"
 #include "MegaCAN/Logging.h"
+#include "MegaCAN/Memory.h"
 #include "MegaCAN/StaticVector.h"
 #include "MSG_defn.h"
-
-#include <util/atomic.h>
-#define MC_ATOMIC_START ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-#define MC_ATOMIC_END }
 
 #define DECL_MEGA_CAN_REV(USER_REV) \
 	static_assert(sizeof(USER_REV) <= MAX_REVISION_BYTES, \
@@ -34,142 +26,6 @@
 namespace MegaCAN
 {
 
-static constexpr unsigned int MAX_CAN_DATA_BYTES = 8u;
-using CAN_DataBuffer = StaticVector<uint8_t, MAX_CAN_DATA_BYTES, uint8_t>;
-
-struct CAN_Msg
-{
-	// 11bit or 29bit identifier
-	uint32_t id;
-	// true if id is 29bits
-	uint8_t ext;
-	// buffer of data bytes
-	CAN_DataBuffer data;
-};
-
-class CAN_MsgQueue
-{
-public:
-	CAN_MsgQueue(
-		CAN_Msg *buff,
-		uint8_t size)
-	{
-		buff_ = buff;
-		buff_size_ = size;
-		clear();
-	}
-
-	~CAN_MsgQueue()
-	{
-	}
-
-	void
-	clear()
-	{
-		front_ = 0;
-		back_ = 0;
-		size_ = 0;
-	}
-
-	bool
-	isFull() const
-	{
-		MC_ATOMIC_START
-		return next(back_) == front_;
-		MC_ATOMIC_END
-	}
-
-	bool
-	isEmpty() const
-	{
-		MC_ATOMIC_START
-		return size_ == 0;
-		MC_ATOMIC_END
-	}
-
-	void
-	push()
-	{
-		MC_ATOMIC_START
-		if (next(back_) != front_)// make sure it's not full
-		{
-			back_ = next(back_);
-			size_++;
-		}
-		MC_ATOMIC_END
-	}
-
-	void
-	pop()
-	{
-		MC_ATOMIC_START
-		if (size_ != 0)// make sure it's not empty
-		{
-			front_ = next(front_);
-			size_--;
-		}
-		MC_ATOMIC_END
-	}
-
-	unsigned int
-	size()
-	{
-		MC_ATOMIC_START
-		if (back_ >= front_)
-		{
-			return back_ - front_;
-		}
-		else
-		{
-			return back_ + buff_size_ - front_;
-		}
-		MC_ATOMIC_END
-	}
-
-	uint8_t
-	capacity() const
-	{
-		return buff_size_;
-	}
-
-	CAN_Msg *
-	getFrontPtr()
-	{
-		return &buff_[front_];
-	}
-
-	CAN_Msg *
-	getBackPtr()
-	{
-		return &buff_[back_];
-	}
-
-private:
-	uint8_t
-	next(
-			uint8_t idx) const
-	{
-		// idx is a local copy, so it's safe to increment
-		idx++;
-		if (idx >= buff_size_)
-		{
-			idx = 0;
-		}
-		return idx;
-	}
-
-private:
-	// block of CAN messages to use for the queue
-	CAN_Msg *buff_;
-	// the number of allocated elements in buff_
-	uint8_t buff_size_;
-
-	volatile uint8_t front_;
-	volatile uint8_t back_;
-	volatile uint8_t size_;
-
-};
-
 struct Options
 {
 	/**
@@ -183,19 +39,14 @@ struct Options
 
 class Device
 {
-
 public:
-	Device(
-			uint8_t cs,
-			uint8_t myId,
-			uint8_t intPin,
-			CAN_Msg *buff,
-			uint8_t buffSize);
-
 	Device() = delete;
 
-	virtual
-	~Device();
+	Device(
+		const SharedPtr<HAL::CAN_Bus> & canBus,
+		const uint8_t myMsqId);
+
+	virtual ~Device() = default;
 
 	void
 	init();
@@ -205,27 +56,6 @@ public:
 
 	void
 	handle();
-
-	/**
-	 * Writes an 11bit CAN frame immediately. Useful for transmitting broadcast data.
-	 * 
-	 * @param[in] id
-	 * The 11bit CAN indentifier
-	 * 
-	 * @param[in] len
-	 * Number of data bytes to transmit in the CAN frame (max of 8 per CAN)
-	 * 
-	 * @param[in] buf
-	 * Pointer to the data to send
-	 * 
-	 * @return
-	 * True if successful, false otherwise.
-	 */
-	bool
-	send11bitFrame(
-		uint16_t id,
-		uint8_t len,
-		uint8_t *buf);
 
 	uint8_t
 	canId() const
@@ -285,17 +115,6 @@ protected:
 		struct Options *opts);
 
 	/**
-	 * Overridable method that allow subclasses to provided custom CAN
-	 * filters that get loaded into the MCP2515 hardware filters.
-	 * 
-	 * @param[in] can
-	 * The MCP2515 CAN interface library to apply the filters to
-	 */
-	virtual void
-	applyCanFilters(
-		MCP_CAN *can);
-
-	/**
 	 * Overridable method for subclass to implement. This method is called by
 	 * the base class when informing Megasquirt/TunerStudio of the maximum
 	 * table block read size.
@@ -331,8 +150,8 @@ protected:
 	 * @param[in] len
 	 * The number of bytes to read
 	 *
-	 * @param[out] resData
-	 * A pointer to the corresponding memory to read from
+	 * @param[out] dataOut
+	 * Buffer of data that was read
 	 *
 	 * @return
 	 * True if the read is valid, false if not.
@@ -342,7 +161,7 @@ protected:
 			const uint8_t table,
 			const uint16_t offset,
 			const uint8_t len,
-			const uint8_t *&resData);
+			HAL::CAN_DataBuffer & dataOut);
 
 	/**
 	 * Overridable method for subclass to implement. This method is called by
@@ -355,11 +174,8 @@ protected:
 	 * @param[in] offset
 	 * The byte offset to begin writing to (relative to the table's start)
 	 *
-	 * @param[in] len
-	 * The number of bytes to write
-	 *
 	 * @param[out] data
-	 * A pointer to the data to write
+	 * Buffer of data to write
 	 *
 	 * @return
 	 * True if the write was successful, false if not.
@@ -368,8 +184,7 @@ protected:
 	writeToTable(
 			const uint8_t table,
 			const uint16_t offset,
-			const uint8_t len,
-			const uint8_t *data);
+			const HAL::CAN_DataBuffer & data);
 
 	/**
 	 * Overridable method for subclass to perform flash table burn. The base
@@ -392,17 +207,13 @@ protected:
 	 * @param[in] id
 	 * The 11bit CAN identifier
 	 * 
-	 * @param[in] length
-	 * The number of data bytes in the CAN frame
-	 * 
 	 * @param[in] data
-	 * A pointer to the data segment of the CAN frame
+	 * The data segment of the CAN frame
 	 */
 	virtual void
 	handleStandard(
 			const uint32_t id,
-			const uint8_t length,
-			uint8_t *data);
+			const HAL::CAN_DataBuffer & data);
 
 	void
 	simReqDrop(
@@ -418,17 +229,13 @@ private:
 	 * @param[in] hdr
 	 * The header of the CAN frame (reinterpreted 29bit identifier)
 	 * 
-	 * @param[in] length
-	 * The number of data bytes in the CAN frame
-	 * 
 	 * @param[in] data
-	 * A pointer to the data segment of the CAN frame
+	 * The data segment of the CAN frame
 	 */
 	void
 	handleExtended(
 			const MS_HDR_t *hdr,
-			const uint8_t length,
-			uint8_t *data);
+			const HAL::CAN_DataBuffer & data);
 
 	/**
 	 * Called when a megasquirt MSG_REQ frame is received.
@@ -437,12 +244,12 @@ private:
 	 * The header of the CAN frame (reinterpreted 29bit identifier)
 	 * 
 	 * @param[in] reqData
-	 * A pointer to the data segment of the request frame
+	 * The data segment from the CAN_Msg
 	 */
 	void
 	handleRequest(
-			const MS_HDR_t *hdr,
-			uint8_t *reqData);
+			const MS_HDR_t * hdr,
+			const HAL::CAN_DataBuffer & reqData);
 
 	/**
 	 * Called within CAN ISR when a Megasquirt extended message is received.
@@ -453,39 +260,26 @@ private:
 	 * @param[in] length
 	 * The length of the data section of the CAN message
 	 * 
-	 * @param[in/out] data
-	 * Pointer to the CAN message data
+	 * @param[in] reqData
+	 * The data segment from the CAN_Msg
 	 */
 	void
 	handleExtendedMsg(
 			const MS_HDR_t *hdr,
-			const uint8_t length,
-			uint8_t *data);
+			const HAL::CAN_DataBuffer & data);
 
 	/**
-	 * Writes a CAN frame
+	 * Writes a CAN msg
 	 * 
-	 * @param[in] id
-	 * The 29bit or 11bit CAN indentifier
-	 * 
-	 * @param[in] ext
-	 * 1 if frame if extended (29bit), or 0 if frame is standard (11bit)
-	 * 
-	 * @param[in] len
-	 * Number of data bytes to transmit in the CAN frame (max of 8 per CAN)
-	 * 
-	 * @param[in] buf
-	 * Pointer to the data to send
+	 * @param[in] msg
+	 * The message to send
 	 * 
 	 * @return
 	 * True if successful, false otherwise.
 	 */
 	bool
-	sendMsgBuf(
-		uint32_t id,
-		uint8_t ext,
-		uint8_t len,
-		uint8_t *buf);
+	sendMsg(
+		const HAL::CAN_Msg & msg);
 
 public:
 	static const char* __MegaCAN_SerialSignature;
@@ -493,24 +287,17 @@ public:
 	static const char* __MegaCAN_SerialRevision;
 
 private:
-	MCP_CAN can_;
+	SharedPtr<HAL::CAN_Bus> canBus_ = nullptr;
 	uint8_t myID_;
-	// MCP2515 interrupt pin
-	// active low
-	uint8_t intPin_;
 
 	struct Options opts_;
 
 	// CAN RX Variables
-	CAN_MsgQueue queue_;
+	HAL::CAN_MsgQueue queue_;
 
 	// Status word for the CAN interface.
 	// see CAN_STATUS_* defines
 	volatile uint8_t canStatus_;
-
-	// allow error handler callbacks to modify private error counters
-	friend void mega_can_rx0_ovr(MCP_CAN *can, void *varg);
-	friend void mega_can_rx1_ovr(MCP_CAN *can, void *varg);
 
 	// Total number of CAN errors detected (counters saturate)
 	volatile uint8_t canLogicErrorCount_;
@@ -521,8 +308,8 @@ private:
 	// debug feature to drop the next N req messages (don't send RSP)
 	uint8_t numSimReqDropsLeft_;
 
-	// Buffer of CAN frame data used for building responses
-	CAN_DataBuffer txBuf_;
+	// CAN_Msg used for building responses
+	HAL::CAN_Msg txMsg_;
 
 	// Header structure used for building CAN responses
 	MS_HDR_t rspHdr_;
@@ -530,5 +317,3 @@ private:
 };
 
 }// namespace - MegaCAN
-
-#endif
