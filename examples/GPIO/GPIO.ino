@@ -1,10 +1,12 @@
 #define MC_LOG_ENABLED
+#define MC_CAN_MSG_QUEUE_DEPTH 40
 
 #include <EEPROM.h>
 #include <EndianUtils.h>
 #include <FlashUtils.h>
 #include <MegaCAN/Logging.h>
 #include <MegaCAN_ExtDevice.h>
+#include "MegaCAN/hal_impl/arduino/MCP2515_CAN_Bus.h"
 #include <MegaCAN_RT_BroadcastHelper.h>
 #include "tables.h"
 
@@ -27,14 +29,14 @@ DECL_MEGA_CAN_REV("OpenGPIO");
 DECL_MEGA_CAN_SIG("OpenGPIO-0.1.0     ");
 
 // CAN related variables
-#define CAN_CS  10
-#define CAN_INT 2
-#define CAN_ID  1
-#define CAN_MSG_BUFFER_SIZE 40
+static constexpr uint8_t CAN_CS    = 10;
+static constexpr uint8_t CAN_INT   = 2;
+static constexpr uint8_t MY_MSQ_ID = 1;
 
 #define RT_BCAST_OFFSET PAGE2_FIELD_OFFSET(rtBcast)
 
-MegaCAN::ExtDevice gpio(CAN_CS,CAN_ID,CAN_INT,can_buff,CAN_MSG_BUFFER_SIZE,TABLES,NUM_TABLES);
+MegaCAN::MCP2515_CAN_Bus canBus(CAN_CS);
+MegaCAN::ExtDevice gpio(&canBus,MY_MSQ_ID,TABLES,NUM_TABLES);
 
 // Scheduler
 Scheduler ts;
@@ -68,16 +70,18 @@ sendRtBcastGroup(
   uint16_t baseId,
   uint8_t group)
 {
-  uint16_t id = baseId + group;
+  const uint16_t id = baseId + group;
   MC_LOG_DEBUG("sending rt group %d; id %d",group,id);
   
+  const auto canId = MegaCAN::HAL::CAN_Id(false, id);
+  auto outPC_u8 = reinterpret_cast<const uint8_t *>(&outPC);
   switch (group)
   {
     case 0:// 00: ADC0,ADC1,ADC2,ADC3
-      gpio.send11bitFrame(id,8,((uint8_t*)(&outPC) + OUTPC_FIELD_OFFSET(adc0)));
+      canBus.sendAny(canId, outPC_u8 + OUTPC_FIELD_OFFSET(adc0), 8u);
       break;
     case 1:// 01: ADC4,ADC5
-      gpio.send11bitFrame(id,4,((uint8_t*)(&outPC) + OUTPC_FIELD_OFFSET(adc4)));
+      canBus.sendAny(canId, outPC_u8 + OUTPC_FIELD_OFFSET(adc4), 4u);
       break;
     default:
       MC_LOG_WARN("bad rt group %d",group);
@@ -130,10 +134,34 @@ setup()
 
   cli();
 
+  // --------------------------------------
   // MCP2515 configuration
-  gpio.init();
+  
   pinMode(CAN_INT, INPUT_PULLUP);// Configuring pin for CAN interrupt input
   attachInterrupt(digitalPinToInterrupt(CAN_INT), canISR, LOW);
+
+  // filter MegaSquirt extended frames destined for this endpoint into RXB0
+  uint32_t mask = 0x0;
+  uint32_t filt = 0x0;
+  auto maskHdr = reinterpret_cast<MS_HDR_t*>(&mask);
+  auto filtHdr = reinterpret_cast<MS_HDR_t*>(&filt);
+  maskHdr->toId = 0xf;// only check the 4bit toId in the megasquirt header
+  filtHdr->toId = gpio.msqId();// make sure the message is for me!
+  canBus.mcpCAN().init_Mask(0,true,mask);
+  canBus.mcpCAN().init_Filt(0,true,filt);
+  canBus.mcpCAN().init_Filt(1,true,filt);
+
+  // filter Megasquirt broadcast frames into RXB1
+  canBus.mcpCAN().init_Mask(1,false,0x00000000);
+  canBus.mcpCAN().init_Filt(2,false,0x00000000);
+  canBus.mcpCAN().init_Filt(3,false,0x00000000);
+  canBus.mcpCAN().init_Filt(4,false,0x00000000);
+  canBus.mcpCAN().init_Filt(5,false,0x00000000);
+
+  // --------------------------------------
+  // GPIO app specific setup
+
+  gpio.init();
 
   // setup real-time broadcast class
   MegaCAN::RT_Bcast.setup(&ts, RT_BCAST_OFFSET, sendRtBcastGroup);

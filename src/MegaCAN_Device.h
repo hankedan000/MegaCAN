@@ -58,9 +58,9 @@ public:
 	handle();
 
 	uint8_t
-	canId() const
+	msqId() const
 	{
-		return myID_;
+		return myMsqId_;
 	}
 
 	uint8_t
@@ -288,7 +288,7 @@ public:
 
 private:
 	SharedPtr<HAL::CAN_Bus> canBus_ = nullptr;
-	uint8_t myID_;
+	uint8_t myMsqId_ = 0u;
 
 	struct Options opts_;
 
@@ -297,16 +297,16 @@ private:
 
 	// Status word for the CAN interface.
 	// see CAN_STATUS_* defines
-	volatile uint8_t canStatus_;
+	volatile uint8_t canStatus_ = 0u;
 
 	// Total number of CAN errors detected (counters saturate)
-	volatile uint8_t canLogicErrorCount_;
-	volatile uint8_t canSW_RxOverflowCount_;
-	volatile uint8_t canHW_Rx0_OverflowCount_;
-	volatile uint8_t canHW_Rx1_OverflowCount_;
+	volatile uint8_t canLogicErrorCount_ = 0u;
+	volatile uint8_t canSW_RxOverflowCount_ = 0u;
+	volatile uint8_t canHW_Rx0_OverflowCount_ = 0u;
+	volatile uint8_t canHW_Rx1_OverflowCount_ = 0u;
 
 	// debug feature to drop the next N req messages (don't send RSP)
-	uint8_t numSimReqDropsLeft_;
+	uint8_t numSimReqDropsLeft_ = 0u;
 
 	// CAN_Msg used for building responses
 	HAL::CAN_Msg txMsg_;

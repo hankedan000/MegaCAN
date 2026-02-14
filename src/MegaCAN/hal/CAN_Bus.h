@@ -17,13 +17,62 @@ namespace MegaCAN::HAL
     static constexpr unsigned int MAX_CAN_DATA_BYTES = 8u;
     using CAN_DataBuffer = StaticVector<uint8_t, MAX_CAN_DATA_BYTES, uint8_t>;
 
+    class CAN_Id
+    {
+    public:
+        static constexpr uint32_t MASK_ID_29  = 0x1fffffffu;
+        static constexpr uint32_t MASK_ID_11  = 0x000007ffu;
+        static constexpr uint32_t MASK_IS_EXT = 0x80000000u;
+
+        CAN_Id() = default;
+
+        CAN_Id(
+            const bool isExt,
+            const uint32_t id)
+        {
+            setId(isExt, id);
+        }
+
+        inline
+        bool
+        isExt() const
+        {
+            return idAndFlag_ & MASK_IS_EXT;
+        }
+
+        inline
+        void
+        setId(
+            const bool isExt,
+            const uint32_t id)
+        {
+            if (isExt)
+            {
+                idAndFlag_ = MASK_IS_EXT | (id & MASK_ID_29);
+            }
+            else
+            {
+                idAndFlag_ = id & MASK_ID_11;
+            }
+        }
+
+        inline
+        uint32_t
+        getId() const
+        {
+            // using MASK_ID_29 to simply strip the extended flag.
+            // works for both 11bit and 29bit ids.
+            return idAndFlag_ & MASK_ID_29;
+        }
+
+    private:
+        uint32_t idAndFlag_ = 0u;
+
+    };
+
     struct CAN_Msg
     {
-        // 11bit or 29bit identifier
-        uint32_t id;
-        // true if id is 29bits
-        uint8_t ext;
-        // buffer of data bytes
+        CAN_Id id;
         CAN_DataBuffer data;
     };
 
@@ -142,7 +191,7 @@ namespace MegaCAN::HAL
             OK,
             NO_MSG,
             BUFFER_BUSY,
-            SEND_TIMEOUT,
+            TIMEOUT,
             INVALID_ARG
         };
 
@@ -155,16 +204,50 @@ namespace MegaCAN::HAL
          * OK - on read success
          * NO_MSG - no received messages
          */
-        virtual RetCode readAny(CAN_Msg & msg) = 0;
+        virtual
+        RetCode
+        readAny(
+            CAN_Msg & msg) = 0;
+
+        /**
+         * Attempt to send a message using any available Tx buffer
+         * @param[in] id - the CAN id to send
+         * @param[in] data - the data to send
+         * @param[in] len - the # of data bytes to send
+         * @param[in] waitForSend - true to wait until the message is
+         * successfully transmitted onto the bus. false for more of a
+         * "send it and forget it" approach.
+         * @return
+         * OK - on success
+         * BUFFER_BUSY - no tx buffers were available
+         * TIMEOUT - failed to transmit message onto the bus in time
+         */
+        virtual
+        RetCode
+        sendAny(
+            const CAN_Id & id,
+            const uint8_t * data,
+            const uint8_t len,
+            const bool waitForSend = 1u) = 0;
 
         /**
          * Attempt to send a message using any available Tx buffer
          * @param[in] msg - the message to send
+         * @param[in] waitForSend - true to wait until the message is
+         * successfully transmitted onto the bus. false for more of a
+         * "send it and forget it" approach.
          * @return
          * OK - on success
          * BUFFER_BUSY - no tx buffers were available
-         * SEND_TIMEOUT - failed to transmit the message in time
+         * TIMEOUT - failed to transmit message onto the bus in time
          */
-        virtual RetCode sendAny(const CAN_Msg & msg, const bool waitForSend = 1u) = 0;
+        inline virtual
+        RetCode
+        sendAny(
+            const CAN_Msg & msg,
+            const bool waitForSend = 1u)
+        {
+            return sendAny(msg.id, msg.data.data(), msg.data.size(), waitForSend);
+        }
     };
 }

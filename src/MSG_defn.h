@@ -34,6 +34,8 @@
 #define GET_MSG_PROT_MYVAROFFSET(data8_ptr) ((uint16_t)((data8_ptr)[3] >> 5) | ((uint16_t)((data8_ptr)[2]) << 3))
 #define GET_MSG_PROT_VARBYT(data8_ptr)      ((data8_ptr)[3] & 0xf)
 
+static constexpr uint8_t MAX_MSQ_ID = 0xfu;
+
 struct MS_HDR_t{
   uint8_t          : 2;
   uint8_t   tableH : 1;

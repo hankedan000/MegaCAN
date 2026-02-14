@@ -52,12 +52,14 @@ Device::Device(
 	const SharedPtr<HAL::CAN_Bus> & canBus,
 	const uint8_t myMsqId)
 	: canBus_(canBus)
-	, myID_(myMsqId)
+	, myMsqId_(myMsqId)
 	, canStatus_(0x0)
 	, numSimReqDropsLeft_(0)
 {
 	if ( ! canBus_) {
 		MC_PANIC("canBus can't be null");
+	} else if (myMsqId > MAX_MSQ_ID) {
+		MC_PANIC("myMsqId must be <= MAX_MSQ_ID");
 	}
 	resetErrorCounters();
 	setupOptions();
@@ -112,9 +114,9 @@ Device::interrupt()
 	while (canBus_->readAny(*msg) == HAL::CAN_Bus::RetCode::OK)
 	{
 		// see if we should handle the broadcast messages immediately
-		if (opts_.handleStandardMsgsImmediately && msg->ext == 0)
+		if (opts_.handleStandardMsgsImmediately && ! msg->id.isExt())
 		{
-			handleStandard(msg->id, msg->data);
+			handleStandard(msg->id.getId(), msg->data);
 		}
 		else
 		{
@@ -142,11 +144,11 @@ Device::handle()
 		MC_LOG_INFO("BUS >>> MCU %s", fmtCAN_DebugStr(msg->id,msg->ext,msg->len,msg->data.data()));
 #endif
 
-		if (msg->ext)
+		if (msg->id.isExt())
 		{
 			const MS_HDR_t* hdr = reinterpret_cast<const MS_HDR_t*>(&msg->id);
 
-			if (hdr->toId == myID_)
+			if (hdr->toId == myMsqId_)
 			{
 				handleExtended(hdr,msg->data);
 			}
@@ -157,7 +159,7 @@ Device::handle()
 		}
 		else
 		{
-			handleStandard(msg->id, msg->data);
+			handleStandard(msg->id.getId(), msg->data);
 		}
 
 		queue_.pop();
@@ -300,8 +302,7 @@ Device::handleExtended(
 		rspHdr_.type = MSG_XTND;
 		setTable(&rspHdr_,0);// don't care
 		rspHdr_.offset = 0;// don't care
-		txMsg_.ext = 1;
-		txMsg_.id = rspHdr_.marshal();
+		txMsg_.id.setId(true, rspHdr_.marshal());
 		txMsg_.data.resize_nofill(2u);
 		txMsg_.data[0] = MSG_BURNACK;
 		txMsg_.data[1] = (burnOkay ? 1 : 0);
@@ -414,8 +415,7 @@ Device::handleRequest(
 	rspHdr_.type = MSG_RSP;
 	setTable(&rspHdr_,req->rspTable);
 	rspHdr_.offset = rspOffset;
-	txMsg_.ext = 1;
-	txMsg_.id = rspHdr_.marshal();
+	txMsg_.id.setId(true, rspHdr_.marshal());
 
 	if (okay)
 	{
@@ -496,8 +496,7 @@ Device::handleExtendedMsg(
 			}
 
 			// send protocol response
-			txMsg_.ext = 1;
-			txMsg_.id = rspHdr_.marshal();
+			txMsg_.id.setId(true, rspHdr_.marshal());
 			if ( ! sendMsg(txMsg_))
 			{
 				INC_ERROR_COUNTER(canLogicErrorCount_);
