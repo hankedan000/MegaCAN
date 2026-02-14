@@ -1,5 +1,10 @@
-#ifndef MEGACAN_LOGGING_H_
-#define MEGACAN_LOGGING_H_
+#pragma once
+
+#define MC_LOG_LVL_DEBUG_I   10
+#define MC_LOG_LVL_INFO_I    20
+#define MC_LOG_LVL_WARN_I    30
+#define MC_LOG_LVL_ERROR_I   40
+#define MC_LOG_LVL_NO_LOGS_I 60
 
 // default threshold to INFO if not set within translation unit
 #ifndef MC_LOG_THRESHOLD
@@ -15,12 +20,6 @@
 #ifndef ARDUINO
 #include <stdio.h> // snprintf()
 #endif
-
-#define MC_LOG_LVL_DEBUG_I   10
-#define MC_LOG_LVL_INFO_I    20
-#define MC_LOG_LVL_WARN_I    30
-#define MC_LOG_LVL_ERROR_I   40
-#define MC_LOG_LVL_NO_LOGS_I 60
 
 // the "##" will remove comma when there are no variable arguments provided
 #ifdef ARDUINO
@@ -95,5 +94,3 @@ namespace MegaCAN
 
   extern Logger Logging;
 }
-
-#endif

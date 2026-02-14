@@ -27,6 +27,8 @@ public:
 		uint8_t table);
 	
 public:
+	ExtDevice() = default;
+	
 	ExtDevice(
 			const SharedPtr<HAL::CAN_Bus> & canBus,
 			const uint8_t myMsqId,

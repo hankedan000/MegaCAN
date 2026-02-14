@@ -40,16 +40,13 @@ struct Options
 class Device
 {
 public:
-	Device() = delete;
+	Device() = default;
 
 	Device(
 		const SharedPtr<HAL::CAN_Bus> & canBus,
 		const uint8_t myMsqId);
 
 	virtual ~Device() = default;
-
-	void
-	init();
 
 	void
 	interrupt();

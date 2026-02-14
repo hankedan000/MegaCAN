@@ -4,9 +4,9 @@
 #include <EEPROM.h>
 #include <EndianUtils.h>
 #include <FlashUtils.h>
-#include <MegaCAN/Logging.h>
 #include <MegaCAN_ExtDevice.h>
 #include "MegaCAN/hal_impl/arduino/MCP2515_CAN_Bus.h"
+#include <MegaCAN/Logging.h>
 #include <MegaCAN_RT_BroadcastHelper.h>
 #include "tables.h"
 
@@ -30,13 +30,13 @@ DECL_MEGA_CAN_SIG("OpenGPIO-0.1.0     ");
 
 // CAN related variables
 static constexpr uint8_t CAN_CS    = 10;
-static constexpr uint8_t CAN_INT   = 2;
+static constexpr uint8_t CAN_INT   = 3;
 static constexpr uint8_t MY_MSQ_ID = 1;
 
 #define RT_BCAST_OFFSET PAGE2_FIELD_OFFSET(rtBcast)
 
 MegaCAN::MCP2515_CAN_Bus canBus(CAN_CS);
-MegaCAN::ExtDevice gpio(&canBus,MY_MSQ_ID,TABLES,NUM_TABLES);
+MegaCAN::ExtDevice gpio;
 
 // Scheduler
 Scheduler ts;
@@ -132,13 +132,16 @@ setup()
 {
   setupLogging();
 
-  cli();
-
   // --------------------------------------
   // MCP2515 configuration
-  
+
   pinMode(CAN_INT, INPUT_PULLUP);// Configuring pin for CAN interrupt input
-  attachInterrupt(digitalPinToInterrupt(CAN_INT), canISR, LOW);
+
+	// Initialize MCP2515 with a baudrate of 500kb/s
+	if(canBus.mcpCAN().begin(MCP_STDEXT, CAN_500KBPS, MCP_8MHZ) != CAN_OK)
+	{
+    MC_PANIC("MCP2515::begin() failed!")
+	}
 
   // filter MegaSquirt extended frames destined for this endpoint into RXB0
   uint32_t mask = 0x0;
@@ -158,10 +161,15 @@ setup()
   canBus.mcpCAN().init_Filt(4,false,0x00000000);
   canBus.mcpCAN().init_Filt(5,false,0x00000000);
 
+	if (canBus.mcpCAN().setMode(MCP_NORMAL) != CAN_OK)
+	{
+    MC_PANIC("MCP2515::setMode() failed!")
+	}
+
   // --------------------------------------
   // GPIO app specific setup
 
-  gpio.init();
+  gpio = MegaCAN::ExtDevice(&canBus,MY_MSQ_ID,TABLES,NUM_TABLES);
 
   // setup real-time broadcast class
   MegaCAN::RT_Bcast.setup(&ts, RT_BCAST_OFFSET, sendRtBcastGroup);
@@ -180,10 +188,9 @@ setup()
   ADCSRA = bit(ADEN) | bit(ADIF) | bit(ADIE);
   ADCSRA |= 0x7;// ADC prescaler 128 (Arduino default)
 
-  // enabled interrupts
-  sei();
-  
   MC_LOG_INFO("setup complete!");
+  
+  attachInterrupt(digitalPinToInterrupt(CAN_INT), canISR, LOW);
 
   // kick off first ADC conversion
   ADCSRA |= bit(ADSC);

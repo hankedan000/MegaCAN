@@ -66,47 +66,6 @@ Device::Device(
 }
 
 void
-Device::init()
-{
-	bool okay = true;
-
-	// TODO move this logic out
-	// Initialize MCP2515 with a baudrate of 500kb/s
-	// if(okay && can_.begin(MCP_STDEXT, CAN_500KBPS, MCP_8MHZ) != CAN_OK)
-	// {
-	// 	MC_LOG_ERROR("MCP2515::begin() failed!");
-	// 	okay = false;
-	// }
-
-	// /**
-	//  * setup hardware-based CAN filters
-	//  * 
-	//  * The default will filter by the Megasquirt CAN device ID, but the
-	//  * subclass override the method to provide more custom filters.
-	//  */
-	// applyCanFilters(&can_);
-
-	// // set the mode to "NORMAL" (only mode we can RX & TX in)
-	// if (okay && can_.setMode(MCP_NORMAL) != CAN_OK)
-	// {
-	// 	MC_LOG_ERROR("MCP2515::setMode() failed!");
-	// 	okay = false;
-	// }
-
-	if (okay)
-	{
-		MC_LOG_INFO("MegaCAN initialized!");
-		MC_LOG_INFO("%d Rx CAN_Msg buffer (%ldbytes)",
-				queue_.capacity(),
-				queue_.capacity() * sizeof(HAL::CAN_Msg));
-	}
-	else
-	{
-		MC_LOG_ERROR("MegaCAN initialization failed!");
-	}
-}
-
-void
 Device::interrupt()
 {
 	auto msg = queue_.getBackPtr();
