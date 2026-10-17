@@ -1,0 +1,45 @@
+{
+  "name": "MegaCAN",
+  "version": "1.1.1",
+  "description": "An Arduino library for communicating with Megasquirt ECUs over a CAN bus.",
+  "keywords": "megasquirt, can, canbus, mcp2515, ecu, automotive",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hankedan000/MegaCAN.git"
+  },
+  "authors": [
+    {
+      "name": "Daniel Hankewycz",
+      "email": "dany32412@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/hankedan000/MegaCAN",
+  "frameworks": "arduino",
+  "platforms": "atmelavr",
+  "dependencies": [
+    {
+      "name": "ArduinoLogging",
+      "version": "https://github.com/hankedan000/ArduinoLogging.git"
+    },
+    {
+      "owner": "arkhipenko",
+      "name": "TaskScheduler",
+      "version": "3.7.0"
+    }
+  ],
+  "export": {
+    "exclude": [
+      "docs",
+      ".github",
+      "**/.pio"
+    ]
+  },
+  "build": {
+    "srcFilter": [
+      "+<*>",
+      "-<codegen/>"
+    ]
+  }
+}

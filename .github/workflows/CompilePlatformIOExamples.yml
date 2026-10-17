@@ -1,0 +1,22 @@
+name: Compile PlatformIO Examples
+on:
+  - push
+  - pull_request
+jobs:
+  compile-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example:
+          - examples/GPIO
+          - examples/RealtimeDataListener
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+      - name: Build ${{ matrix.example }}
+        run: pio run -d ${{ matrix.example }}
